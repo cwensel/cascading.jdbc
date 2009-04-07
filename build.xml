@@ -20,8 +20,8 @@
 <project name="cascading-jdbc" default="build" basedir=".">
 
   <!-- load properties first -->
-  <!--<property file="${user.home}/${name}.build.properties" />-->
-  <!--<property file="${root}/build.properties" />-->
+  <!--<property file="${user.home}/.${ant.project.name}.build.properties" />-->
+  <property file="${basedir}/build.properties"/>
 
   <!-- these are optional, only used if you uncomment the project.class.path filesets below -->
   <property name="hadoop.home" location="${basedir}/../hadoop"/>
@@ -78,7 +78,7 @@
 
 
     <!--<fileset dir="${lib.dir}">-->
-      <!--<include name="*.jar"/>-->
+    <!--<include name="*.jar"/>-->
     <!--</fileset>-->
 
     <fileset dir="${hadoop.home}">
@@ -181,9 +181,7 @@
     <copy todir="${dist}">
 
       <fileset dir=".">
-        <include name="data/**"/>
         <include name="src/**"/>
-        <include name="lib/**"/>
         <include name="build.xml"/>
         <include name="README.txt"/>
       </fileset>
