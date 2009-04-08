@@ -23,6 +23,10 @@
   <!--<property file="${user.home}/.${ant.project.name}.build.properties" />-->
   <property file="${basedir}/build.properties"/>
 
+  <property file="${basedir}/version.properties"/>
+
+  <property name="cascading.jdbc.version" value="x.y.z"/>
+
   <!-- these are optional, only used if you uncomment the project.class.path filesets below -->
   <property name="hadoop.home" location="${basedir}/../hadoop"/>
   <property name="hadoop.lib" location="${hadoop.home}/lib"/>
@@ -136,7 +140,7 @@
 
   <target name="jar" depends="build" description="creates module jar">
 
-    <jar jarfile="${build.dir}/${ant.project.name}.jar">
+    <jar jarfile="${build.dir}/${ant.project.name}-${cascading.jdbc.version}.jar">
       <fileset dir="${build.classes}"/>
     </jar>
 
