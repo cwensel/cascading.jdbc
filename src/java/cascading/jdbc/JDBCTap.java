@@ -190,7 +190,7 @@ public class JDBCTap extends Tap
       if( username == null )
         connection = DriverManager.getConnection( connectionUrl );
       else
-        DriverManager.getConnection( connectionUrl, username, password );
+        connection = DriverManager.getConnection( connectionUrl, username, password );
 
       connection.setAutoCommit( false );
 
