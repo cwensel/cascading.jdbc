@@ -13,50 +13,50 @@
 package cascading.jdbc;
 
 import java.io.IOException;
-import java.sql.DriverManager;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.ResultSet;
 
+import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tap.TapException;
-import cascading.tap.SinkMode;
-import cascading.tap.hadoop.TapIterator;
 import cascading.tap.hadoop.TapCollector;
-import cascading.tuple.TupleEntryIterator;
+import cascading.tap.hadoop.TapIterator;
 import cascading.tuple.TupleEntryCollector;
-import cascading.scheme.Scheme;
+import cascading.tuple.TupleEntryIterator;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.lib.db.DBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Class JDBCTap is a {@link Tap} subclass that provides read and write access to a RDBMS.
- */
+/** Class JDBCTap is a {@link Tap} subclass that provides read and write access to a RDBMS. */
 public class JDBCTap extends Tap
   {
-  /** Field LOG  */
+  /** Field LOG */
   private static final Logger LOG = LoggerFactory.getLogger( JDBCTap.class );
 
-  /** Field connectionUrl  */
+  /** Field connectionUrl */
   String connectionUrl;
-  /** Field driverClassName  */
+  /** Field username */
+  String username;
+  /** Field password */
+  String password;
+  /** Field driverClassName */
   String driverClassName;
-  /** Field tableDesc  */
+  /** Field tableDesc */
   TableDesc tableDesc;
 
   /**
    * Constructor JDBCTap creates a new JDBCTap instance.
    *
-   * @param connectionUrl of type String
+   * @param connectionUrl   of type String
    * @param driverClassName of type String
-   * @param tableDesc of type TableDesc
-   * @param scheme of type JDBCScheme
-   * @param sinkMode of type SinkMode
+   * @param tableDesc       of type TableDesc
+   * @param scheme          of type JDBCScheme
+   * @param sinkMode        of type SinkMode
    */
   public JDBCTap( String connectionUrl, String driverClassName, TableDesc tableDesc, JDBCScheme scheme, SinkMode sinkMode )
     {
@@ -69,15 +69,52 @@ public class JDBCTap extends Tap
   /**
    * Constructor JDBCTap creates a new JDBCTap instance.
    *
-   * @param connectionUrl of type String
+   * @param connectionUrl   of type String
+   * @param username        of type String
+   * @param password        of type String
    * @param driverClassName of type String
-   * @param tableDesc of type TableDesc
-   * @param scheme of type JDBCScheme
+   * @param tableDesc       of type TableDesc
+   * @param scheme          of type JDBCScheme
+   */
+  public JDBCTap( String connectionUrl, String username, String password, String driverClassName, TableDesc tableDesc, JDBCScheme scheme )
+    {
+    this( connectionUrl, username, password, driverClassName, tableDesc, scheme, SinkMode.APPEND );
+    }
+
+  /**
+   * Constructor JDBCTap creates a new JDBCTap instance.
+   *
+   * @param connectionUrl   of type String
+   * @param username        of type String
+   * @param password        of type String
+   * @param driverClassName of type String
+   * @param tableDesc       of type TableDesc
+   * @param scheme          of type JDBCScheme
+   * @param sinkMode        of type SinkMode
+   */
+  public JDBCTap( String connectionUrl, String username, String password, String driverClassName, TableDesc tableDesc, JDBCScheme scheme, SinkMode sinkMode )
+    {
+    super( scheme, sinkMode );
+    this.connectionUrl = connectionUrl;
+    this.username = username;
+    this.password = password;
+    this.driverClassName = driverClassName;
+    this.tableDesc = tableDesc;
+    }
+
+  /**
+   * Constructor JDBCTap creates a new JDBCTap instance.
+   *
+   * @param connectionUrl   of type String
+   * @param driverClassName of type String
+   * @param tableDesc       of type TableDesc
+   * @param scheme          of type JDBCScheme
    */
   public JDBCTap( String connectionUrl, String driverClassName, TableDesc tableDesc, JDBCScheme scheme )
     {
     this( connectionUrl, driverClassName, tableDesc, scheme, SinkMode.APPEND );
     }
+
 
   /**
    * Method getTableName returns the tableName of this JDBCTap object.
@@ -115,7 +152,11 @@ public class JDBCTap extends Tap
     // a hack for MultiInputFormat to see that there is a child format
     FileInputFormat.setInputPaths( conf, getPath() );
 
-    DBConfiguration.configureDB( conf, driverClassName, connectionUrl );
+    if( username == null )
+      DBConfiguration.configureDB( conf, driverClassName, connectionUrl );
+    else
+      DBConfiguration.configureDB( conf, driverClassName, connectionUrl, username, password );
+
     super.sourceInit( conf );
     }
 
@@ -128,7 +169,11 @@ public class JDBCTap extends Tap
 
     makeDirs( conf );
 
-    DBConfiguration.configureDB( conf, driverClassName, connectionUrl );
+    if( username == null )
+      DBConfiguration.configureDB( conf, driverClassName, connectionUrl );
+    else
+      DBConfiguration.configureDB( conf, driverClassName, connectionUrl, username, password );
+
     super.sinkInit( conf );
     }
 
@@ -139,7 +184,14 @@ public class JDBCTap extends Tap
       LOG.info( "creating connection: {}", connectionUrl );
 
       Class.forName( driverClassName );
-      Connection connection = DriverManager.getConnection( connectionUrl );
+
+      Connection connection = null;
+
+      if( username == null )
+        connection = DriverManager.getConnection( connectionUrl );
+      else
+        DriverManager.getConnection( connectionUrl, username, password );
+
       connection.setAutoCommit( false );
 
       return connection;
