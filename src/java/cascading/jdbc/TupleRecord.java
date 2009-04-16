@@ -13,10 +13,10 @@
 package cascading.jdbc;
 
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
-import org.apache.hadoop.mapred.lib.db.DBWritable;
+import cascading.jdbc.db.DBWritable;
 import cascading.tuple.Tuple;
 
 /**

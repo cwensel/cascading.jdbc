@@ -14,23 +14,33 @@ package cascading.jdbc;
 
 import java.io.IOException;
 
+import cascading.jdbc.db.DBInputFormat;
+import cascading.jdbc.db.DBOutputFormat;
 import cascading.scheme.Scheme;
 import cascading.tap.Tap;
+import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
-import cascading.tuple.Fields;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.lib.db.DBInputFormat;
-import org.apache.hadoop.mapred.lib.db.DBOutputFormat;
 
-/**
- * Class JDBCScheme ...
- */
+/** Class JDBCScheme ... */
 public class JDBCScheme extends Scheme
   {
+  private Class<? extends DBInputFormat> inputFormatClass;
+  private Class<? extends DBOutputFormat> outputFormatClass;
   private String[] columns;
   private String orderBy;
+
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, String[] columns, String orderBy )
+    {
+    super( new Fields( columns ), new Fields( columns ) );
+
+    this.inputFormatClass = inputFormatClass;
+    this.outputFormatClass = outputFormatClass;
+    this.columns = columns;
+    this.orderBy = orderBy;
+    }
 
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
@@ -60,13 +70,18 @@ public class JDBCScheme extends Scheme
     {
     String tableName = ( (JDBCTap) tap ).getTableName();
     DBInputFormat.setInput( conf, TupleRecord.class, tableName, null, orderBy, columns );
+
+    if( inputFormatClass != null )
+      conf.setInputFormat( inputFormatClass );
     }
 
   public void sinkInit( Tap tap, JobConf conf ) throws IOException
     {
     String tableName = ( (JDBCTap) tap ).getTableName();
+    DBOutputFormat.setOutput( conf, DBOutputFormat.class, tableName, columns );
 
-    DBOutputFormat.setOutput( conf, tableName, columns );
+    if( outputFormatClass != null )
+      conf.setOutputFormat( outputFormatClass );
     }
 
   public Tuple source( Object key, Object value )
@@ -78,6 +93,6 @@ public class JDBCScheme extends Scheme
     {
     Tuple tuple = tupleEntry.selectTuple( getSinkFields() );
 
-    outputCollector.collect(  new TupleRecord( tuple ), null );
+    outputCollector.collect( new TupleRecord( tuple ), null );
     }
   }
