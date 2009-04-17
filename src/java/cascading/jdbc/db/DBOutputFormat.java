@@ -61,39 +61,38 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
 
     private Connection connection;
     private PreparedStatement statement;
+    private final int statementsBeforeExecute;
 
-    protected DBRecordWriter( Connection connection, PreparedStatement statement )
+    private long statementsAdded = 0;
+
+    protected DBRecordWriter( Connection connection, PreparedStatement statement, int statementsBeforeExecute )
       {
       this.connection = connection;
       this.statement = statement;
+      this.statementsBeforeExecute = statementsBeforeExecute;
       }
 
     /** {@inheritDoc} */
     public void close( Reporter reporter ) throws IOException
       {
+
+      executeBatch();
+
       try
         {
-        statement.executeBatch();
+        statement.close();
         connection.commit();
         }
       catch( SQLException exception )
         {
-        try
-          {
-          connection.rollback();
-          }
-        catch( SQLException sqlException )
-          {
-          LOG.warn( StringUtils.stringifyException( sqlException ) );
-          }
+        rollBack();
 
-        throw new IOException( "unable to commit batch: " + exception.getMessage(), exception.getNextException() );
+        createThrowMessage( "unable to commit batch", exception );
         }
       finally
         {
         try
           {
-          statement.close();
           connection.close();
           }
         catch( SQLException exception )
@@ -101,6 +100,45 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
           throw new IOException( "unable to close connection", exception );
           }
         }
+      }
+
+    private void executeBatch() throws IOException
+      {
+      try
+        {
+        statement.executeBatch();
+        }
+      catch( SQLException exception )
+        {
+        rollBack();
+
+        createThrowMessage( "unable to execute batch", exception );
+        }
+      }
+
+    private void rollBack()
+      {
+      try
+        {
+        connection.rollback();
+        }
+      catch( SQLException sqlException )
+        {
+        LOG.warn( StringUtils.stringifyException( sqlException ) );
+        }
+      }
+
+    private void createThrowMessage( String stateMessage, SQLException exception ) throws IOException
+      {
+      String message = exception.getMessage();
+
+      message = message.substring( 0, Math.min( 75, message.length() ) );
+
+      String errorMessage = String.format( "%s [length: %d][stmts: %d]: %s", stateMessage, exception.getMessage().length(), statementsAdded, message );
+
+      LOG.error( errorMessage, exception.getNextException() );
+
+      throw new IOException( errorMessage, exception.getNextException() );
       }
 
     /** {@inheritDoc} */
@@ -115,6 +153,11 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
         {
         throw new IOException( "unable to add batch statement", exception );
         }
+
+      statementsAdded++;
+
+      if( statementsAdded % statementsBeforeExecute == 0 )
+        executeBatch();
       }
     }
 
@@ -178,6 +221,7 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
 
     String tableName = dbConf.getOutputTableName();
     String[] fieldNames = dbConf.getOutputFieldNames();
+    int batchStatements = dbConf.getBatchStatementsNum();
 
     Connection connection = dbConf.getConnection();
 
@@ -187,7 +231,11 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
 
     try
       {
-      return new DBRecordWriter( connection, connection.prepareStatement( sqlQuery ) );
+      PreparedStatement preparedStatement = connection.prepareStatement( sqlQuery );
+
+      preparedStatement.setEscapeProcessing( true ); // should be on be default
+
+      return new DBRecordWriter( connection, preparedStatement, batchStatements );
       }
     catch( SQLException exception )
       {
@@ -227,7 +275,9 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
     else
       job.setOutputFormat( dbOutputFormatClass );
 
+    // writing doesn't always happen in reduce
     job.setReduceSpeculativeExecution( false );
+    job.setMapSpeculativeExecution( false );
 
     DBConfiguration dbConf = new DBConfiguration( job );
 

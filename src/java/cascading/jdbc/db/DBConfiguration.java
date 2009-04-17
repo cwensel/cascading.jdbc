@@ -93,6 +93,9 @@ public class DBConfiguration
   /** Field names in the Output table */
   public static final String OUTPUT_FIELD_NAMES_PROPERTY = "mapred.jdbc.output.field.names";
 
+  /** The number of statements to batch before executing */
+  public static final String BATCH_STATEMENTS_NUM = "mapred.jdbc.batch.statements.num";
+
   /**
    * Sets the DB access related fields in the JobConf.
    *
@@ -255,6 +258,16 @@ public class DBConfiguration
   void setOutputFieldNames( String... fieldNames )
     {
     job.setStrings( DBConfiguration.OUTPUT_FIELD_NAMES_PROPERTY, fieldNames );
+    }
+
+  int getBatchStatementsNum()
+    {
+    return job.getInt( DBConfiguration.BATCH_STATEMENTS_NUM, 1000 );
+    }
+
+  void setOutputFieldNames( int batchStatementsNum )
+    {
+    job.setInt( DBConfiguration.BATCH_STATEMENTS_NUM, batchStatementsNum );
     }
 
   }
