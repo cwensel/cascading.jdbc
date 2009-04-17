@@ -87,7 +87,7 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
           LOG.warn( StringUtils.stringifyException( sqlException ) );
           }
 
-        throw new IOException( "unable to commit batch", exception );
+        throw new IOException( "unable to commit batch: " + exception.getMessage(), exception.getNextException() );
         }
       finally
         {

@@ -133,7 +133,7 @@ public class JDBCTap extends Tap
    */
   public Path getPath()
     {
-    return new Path( "jdbc:/" + connectionUrl.replaceAll( ":", "_" ) );
+    return null;
     }
 
   public TupleEntryIterator openForRead( JobConf conf ) throws IOException
