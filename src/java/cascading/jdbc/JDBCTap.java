@@ -164,8 +164,8 @@ public class JDBCTap extends Tap
   public void sinkInit( JobConf conf ) throws IOException
     {
     // do not delete if initialized from within a task
-    if( isReplace() && conf.get( "mapred.task.partition" ) == null )
-      deletePath( conf );
+    if( isReplace() && conf.get( "mapred.task.partition" ) == null && !deletePath( conf ) )
+      throw new TapException( "unable to drop table: " + tableDesc.getTableName() );
 
     if( !makeDirs( conf ) )
       throw new TapException( "unable to create table: " + tableDesc.getTableName() );
@@ -317,7 +317,7 @@ public class JDBCTap extends Tap
       return false;
       }
 
-    return true;
+    return !pathExists( conf );
     }
 
   public boolean pathExists( JobConf conf ) throws IOException
