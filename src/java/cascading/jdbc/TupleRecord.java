@@ -32,7 +32,6 @@ public class TupleRecord implements DBWritable
 
   public TupleRecord( Tuple tuple )
     {
-
     this.tuple = tuple;
     }
 

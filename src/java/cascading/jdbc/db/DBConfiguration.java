@@ -93,6 +93,9 @@ public class DBConfiguration
   /** Field names in the Output table */
   public static final String OUTPUT_FIELD_NAMES_PROPERTY = "mapred.jdbc.output.field.names";
 
+  /** Field names in the Output table */
+  public static final String OUTPUT_UPDATE_FIELD_NAMES_PROPERTY = "mapred.jdbc.output.update.field.names";
+
   /** The number of statements to batch before executing */
   public static final String BATCH_STATEMENTS_NUM = "mapred.jdbc.batch.statements.num";
 
@@ -258,6 +261,16 @@ public class DBConfiguration
   void setOutputFieldNames( String... fieldNames )
     {
     job.setStrings( DBConfiguration.OUTPUT_FIELD_NAMES_PROPERTY, fieldNames );
+    }
+
+  String[] getOutputUpdateFieldNames()
+    {
+    return job.getStrings( DBConfiguration.OUTPUT_UPDATE_FIELD_NAMES_PROPERTY );
+    }
+
+  void setOutputUpdateFieldNames( String... fieldNames )
+    {
+    job.setStrings( DBConfiguration.OUTPUT_UPDATE_FIELD_NAMES_PROPERTY, fieldNames );
     }
 
   int getBatchStatementsNum()

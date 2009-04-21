@@ -34,8 +34,8 @@ public class TableDesc implements Serializable
   String[] columnNames;
   /** Field columnDefs */
   String[] columnDefs;
-  /** Field primaryKey */
-  String primaryKey;
+  /** Field primaryKeys */
+  String[] primaryKeys;
 
   /**
    * Constructor TableDesc creates a new TableDesc instance.
@@ -55,14 +55,14 @@ public class TableDesc implements Serializable
    * @param tableName   of type String
    * @param columnNames of type String[]
    * @param columnDefs  of type String[]
-   * @param primaryKey  of type String
+   * @param primaryKeys of type String
    */
-  public TableDesc( String tableName, String[] columnNames, String[] columnDefs, String primaryKey )
+  public TableDesc( String tableName, String[] columnNames, String[] columnDefs, String[] primaryKeys )
     {
     this.tableName = tableName;
     this.columnNames = columnNames;
     this.columnDefs = columnDefs;
-    this.primaryKey = primaryKey;
+    this.primaryKeys = primaryKeys;
     }
 
   /**
@@ -108,7 +108,7 @@ public class TableDesc implements Serializable
   protected List<String> addPrimaryKeyTo( List<String> createTableStatement )
     {
     if( hasPrimaryKey() )
-      createTableStatement.add( String.format( "PRIMARY KEY( %s )", primaryKey ) );
+      createTableStatement.add( String.format( "PRIMARY KEY( %s )", Util.join( primaryKeys, ", " ) ) );
 
     return createTableStatement;
     }
@@ -135,12 +135,12 @@ public class TableDesc implements Serializable
 
   private boolean hasPrimaryKey()
     {
-    return primaryKey != null && primaryKey.length() != 0;
+    return primaryKeys != null && primaryKeys.length != 0;
     }
 
   @Override
   public String toString()
     {
-    return "TableDesc{" + "tableName='" + tableName + '\'' + ", columnNames=" + ( columnNames == null ? null : Arrays.asList( columnNames ) ) + ", primaryKey='" + primaryKey + '\'' + '}';
+    return "TableDesc{" + "tableName='" + tableName + '\'' + ", columnNames=" + ( columnNames == null ? null : Arrays.asList( columnNames ) ) + ", columnDefs=" + ( columnDefs == null ? null : Arrays.asList( columnDefs ) ) + ", primaryKeys=" + ( primaryKeys == null ? null : Arrays.asList( primaryKeys ) ) + '}';
     }
   }

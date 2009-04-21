@@ -60,15 +60,19 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
     {
 
     private Connection connection;
-    private PreparedStatement statement;
+    private PreparedStatement insertStatement;
+    private PreparedStatement updateStatement;
     private final int statementsBeforeExecute;
 
     private long statementsAdded = 0;
+    private long insertStatementsCurrent = 0;
+    private long updateStatementsCurrent = 0;
 
-    protected DBRecordWriter( Connection connection, PreparedStatement statement, int statementsBeforeExecute )
+    protected DBRecordWriter( Connection connection, PreparedStatement insertStatement, PreparedStatement updateStatement, int statementsBeforeExecute )
       {
       this.connection = connection;
-      this.statement = statement;
+      this.insertStatement = insertStatement;
+      this.updateStatement = updateStatement;
       this.statementsBeforeExecute = statementsBeforeExecute;
       }
 
@@ -80,7 +84,11 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
 
       try
         {
-        statement.close();
+        insertStatement.close();
+
+        if( updateStatement != null )
+          updateStatement.close();
+
         connection.commit();
         }
       catch( SQLException exception )
@@ -106,13 +114,30 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
       {
       try
         {
-        statement.executeBatch();
+        if( insertStatementsCurrent != 0 )
+          insertStatement.executeBatch();
+
+        insertStatementsCurrent = 0;
         }
       catch( SQLException exception )
         {
         rollBack();
 
-        createThrowMessage( "unable to execute batch", exception );
+        createThrowMessage( "unable to execute insert batch", exception );
+        }
+
+      try
+        {
+        if( updateStatementsCurrent != 0 )
+          updateStatement.executeBatch();
+
+        updateStatementsCurrent = 0;
+        }
+      catch( SQLException exception )
+        {
+        rollBack();
+
+        createThrowMessage( "unable to execute update batch", exception );
         }
       }
 
@@ -146,8 +171,18 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
       {
       try
         {
-        key.write( statement );
-        statement.addBatch();
+        if( value == null )
+          {
+          key.write( insertStatement );
+          insertStatement.addBatch();
+          insertStatementsCurrent++;
+          }
+        else
+          {
+          key.write( updateStatement );
+          updateStatement.addBatch();
+          updateStatementsCurrent++;
+          }
         }
       catch( SQLException exception )
         {
@@ -168,7 +203,7 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
    * @param fieldNames the fields to insert into. If field names are unknown, supply an
    *                   array of nulls.
    */
-  protected String constructQuery( String table, String[] fieldNames )
+  protected String constructInsertQuery( String table, String[] fieldNames )
     {
     if( fieldNames == null )
       throw new IllegalArgumentException( "Field names may not be null" );
@@ -208,6 +243,48 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
     return query.toString();
     }
 
+  protected String constructUpdateQuery( String table, String[] fieldNames, String[] updateNames )
+    {
+    if( fieldNames == null )
+      throw new IllegalArgumentException( "field names may not be null" );
+
+    StringBuilder query = new StringBuilder();
+
+    query.append( "UPDATE " ).append( table );
+
+    query.append( " SET " );
+
+    if( fieldNames.length > 0 && fieldNames[ 0 ] != null )
+      {
+      for( int i = 0; i < fieldNames.length; i++ )
+        {
+        query.append( fieldNames[ i ] );
+        query.append( " = ?" );
+
+        if( i != fieldNames.length - 1 )
+          query.append( "," );
+        }
+      }
+
+    query.append( " WHERE " );
+
+    if( updateNames.length > 0 && updateNames[ 0 ] != null )
+      {
+      for( int i = 0; i < updateNames.length; i++ )
+        {
+        query.append( updateNames[ i ] );
+        query.append( " = ?" );
+
+        if( i != updateNames.length - 1 )
+          query.append( " and " );
+        }
+      }
+
+    query.append( ";" );
+
+    return query.toString();
+    }
+
   /** {@inheritDoc} */
   public void checkOutputSpecs( FileSystem filesystem, JobConf job ) throws IOException
     {
@@ -221,26 +298,41 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
 
     String tableName = dbConf.getOutputTableName();
     String[] fieldNames = dbConf.getOutputFieldNames();
+    String[] updateNames = dbConf.getOutputUpdateFieldNames();
     int batchStatements = dbConf.getBatchStatementsNum();
 
     Connection connection = dbConf.getConnection();
 
     configureConnection( connection );
 
-    String sqlQuery = constructQuery( tableName, fieldNames );
+
+    String sqlInsert = constructInsertQuery( tableName, fieldNames );
+    PreparedStatement insertPreparedStatement;
 
     try
       {
-      PreparedStatement preparedStatement = connection.prepareStatement( sqlQuery );
-
-      preparedStatement.setEscapeProcessing( true ); // should be on be default
-
-      return new DBRecordWriter( connection, preparedStatement, batchStatements );
+      insertPreparedStatement = connection.prepareStatement( sqlInsert );
+      insertPreparedStatement.setEscapeProcessing( true ); // should be on be default
       }
     catch( SQLException exception )
       {
-      throw new IOException( "unable to create statement for: " + sqlQuery, exception );
+      throw new IOException( "unable to create statement for: " + sqlInsert, exception );
       }
+
+    String sqlUpdate = updateNames != null ? constructUpdateQuery( tableName, fieldNames, updateNames ) : null;
+    PreparedStatement updatePreparedStatement = null;
+
+    try
+      {
+      updatePreparedStatement = sqlUpdate != null ? connection.prepareStatement( sqlUpdate ) : null;
+      }
+    catch( SQLException exception )
+      {
+      throw new IOException( "unable to create statement for: " + sqlUpdate, exception );
+      }
+
+
+    return new DBRecordWriter( connection, insertPreparedStatement, updatePreparedStatement, batchStatements );
     }
 
   protected void configureConnection( Connection connection )
@@ -268,7 +360,7 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
    * @param tableName           The table to insert data into
    * @param fieldNames          The field names in the table. If unknown, supply the appropriate
    */
-  public static void setOutput( JobConf job, Class<? extends DBOutputFormat> dbOutputFormatClass, String tableName, String... fieldNames )
+  public static void setOutput( JobConf job, Class<? extends DBOutputFormat> dbOutputFormatClass, String tableName, String[] fieldNames, String[] updateFields )
     {
     if( dbOutputFormatClass == null )
       job.setOutputFormat( DBOutputFormat.class );
@@ -283,5 +375,8 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
 
     dbConf.setOutputTableName( tableName );
     dbConf.setOutputFieldNames( fieldNames );
+
+    if( updateFields != null )
+      dbConf.setOutputUpdateFieldNames( updateFields );
     }
   }
