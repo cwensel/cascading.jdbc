@@ -13,7 +13,9 @@
 package cascading.jdbc;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import cascading.util.Util;
 
@@ -26,19 +28,19 @@ import cascading.util.Util;
  */
 public class TableDesc implements Serializable
   {
-  /** Field tableName  */
+  /** Field tableName */
   String tableName;
-  /** Field columnNames  */
+  /** Field columnNames */
   String[] columnNames;
-  /** Field columnDefs  */
+  /** Field columnDefs */
   String[] columnDefs;
-  /** Field primaryKey  */
+  /** Field primaryKey */
   String primaryKey;
 
   /**
    * Constructor TableDesc creates a new TableDesc instance.
    *
-   * @param tableName of type String
+   * @param tableName   of type String
    * @param columnNames of type String[]
    */
   public TableDesc( String tableName, String[] columnNames )
@@ -50,10 +52,10 @@ public class TableDesc implements Serializable
   /**
    * Constructor TableDesc creates a new TableDesc instance.
    *
-   * @param tableName of type String
+   * @param tableName   of type String
    * @param columnNames of type String[]
-   * @param columnDefs of type String[]
-   * @param primaryKey of type String
+   * @param columnDefs  of type String[]
+   * @param primaryKey  of type String
    */
   public TableDesc( String tableName, String[] columnNames, String[] columnDefs, String primaryKey )
     {
@@ -68,22 +70,47 @@ public class TableDesc implements Serializable
    *
    * @return the tableCreateStatement (type String) of this TableDesc object.
    */
-  public String getTableCreateStatement()
+  public String getCreateTableStatement()
     {
-    String[] decl = new String[columnNames.length + ( hasPrimaryKey() ? 1 : 0 )];
+    List<String> createTableStatement = new ArrayList<String>();
 
+    createTableStatement = addCreateTableBodyTo( createTableStatement );
+
+    return String.format( getCreateTableFormat(), tableName, Util.join( createTableStatement, ", " ) );
+    }
+
+  protected List<String> addCreateTableBodyTo( List<String> createTableStatement )
+    {
+    createTableStatement = addDefinitionsTo( createTableStatement );
+    createTableStatement = addPrimaryKeyTo( createTableStatement );
+
+    return createTableStatement;
+    }
+
+  protected String getCreateTableFormat()
+    {
+    return "CREATE TABLE %s ( %s )";
+    }
+
+  protected List<String> addDefinitionsTo( List<String> createTableStatement )
+    {
     for( int i = 0; i < columnNames.length; i++ )
       {
       String columnName = columnNames[ i ];
       String columnDef = columnDefs[ i ];
 
-      decl[ i ] = columnName + " " + columnDef;
+      createTableStatement.add( columnName + " " + columnDef );
       }
 
-    if( hasPrimaryKey() )
-      decl[ decl.length - 1 ] = String.format( "PRIMARY KEY( %s )", primaryKey );
+    return createTableStatement;
+    }
 
-    return String.format( "CREATE TABLE %s ( %s )", tableName, Util.join( decl, ", " ) );
+  protected List<String> addPrimaryKeyTo( List<String> createTableStatement )
+    {
+    if( hasPrimaryKey() )
+      createTableStatement.add( String.format( "PRIMARY KEY( %s )", primaryKey ) );
+
+    return createTableStatement;
     }
 
   /**

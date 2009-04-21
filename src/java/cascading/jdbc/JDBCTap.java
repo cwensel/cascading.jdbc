@@ -133,7 +133,7 @@ public class JDBCTap extends Tap
    */
   public Path getPath()
     {
-    return null;
+    return new Path( "jdbc:/" + connectionUrl.replaceAll( ":", "_" ) );
     }
 
   public TupleEntryIterator openForRead( JobConf conf ) throws IOException
@@ -289,7 +289,7 @@ public class JDBCTap extends Tap
       {
       LOG.info( "creating table: {}", tableDesc.tableName );
 
-      executeUpdate( tableDesc.getTableCreateStatement() );
+      executeUpdate( tableDesc.getCreateTableStatement() );
       }
     catch( TapException exception )
       {
