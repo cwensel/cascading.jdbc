@@ -140,7 +140,12 @@ public class TableDesc implements Serializable
    */
   public String getTableDropStatement()
     {
-    return String.format( "DROP TABLE %s", tableName );
+    return String.format( getDropTableFormat(), tableName );
+    }
+
+  protected String getDropTableFormat()
+    {
+    return "DROP TABLE %s";
     }
 
   /**
