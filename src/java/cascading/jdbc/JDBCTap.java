@@ -298,7 +298,7 @@ public class JDBCTap extends Tap
       return false;
       }
 
-    return true;
+    return pathExists( conf );
     }
 
   public boolean deletePath( JobConf conf ) throws IOException
