@@ -101,7 +101,7 @@ public class JDBCTest extends ClusterTestCase
 
     updateFlow.complete();
 
-    verifySink( copyFlow, 13 );
+    verifySink( updateFlow, 13 );
     }
 
   private void verifySink( Flow flow, int expects ) throws IOException

@@ -294,7 +294,7 @@ public class JDBCTap extends Tap
       }
     catch( TapException exception )
       {
-      LOG.warn( "unable to create table: {}", tableDesc.tableName, exception );
+      LOG.warn( "unable to create table: {}", tableDesc.tableName, exception.getCause() );
 
       return false;
       }
@@ -312,7 +312,7 @@ public class JDBCTap extends Tap
       }
     catch( TapException exception )
       {
-      LOG.warn( "unable to drop table: {}", tableDesc.tableName, exception );
+      LOG.warn( "unable to drop table: {}", tableDesc.tableName, exception.getCause() );
 
       return false;
       }
