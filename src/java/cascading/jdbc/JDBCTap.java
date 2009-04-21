@@ -167,7 +167,8 @@ public class JDBCTap extends Tap
     if( isReplace() && conf.get( "mapred.task.partition" ) == null )
       deletePath( conf );
 
-    makeDirs( conf );
+    if( !makeDirs( conf ) )
+      throw new TapException( "unable to create table: " + tableDesc.getTableName() );
 
     if( username == null )
       DBConfiguration.configureDB( conf, driverClassName, connectionUrl );

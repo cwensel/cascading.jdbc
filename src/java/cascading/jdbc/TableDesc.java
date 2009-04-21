@@ -65,6 +65,26 @@ public class TableDesc implements Serializable
     this.primaryKeys = primaryKeys;
     }
 
+  public String getTableName()
+    {
+    return tableName;
+    }
+
+  public String[] getColumnNames()
+    {
+    return columnNames;
+    }
+
+  public String[] getColumnDefs()
+    {
+    return columnDefs;
+    }
+
+  public String[] getPrimaryKeys()
+    {
+    return primaryKeys;
+    }
+
   /**
    * Method getTableCreateStatement returns the tableCreateStatement of this TableDesc object.
    *
