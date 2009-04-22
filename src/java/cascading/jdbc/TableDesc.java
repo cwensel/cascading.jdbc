@@ -40,13 +40,11 @@ public class TableDesc implements Serializable
   /**
    * Constructor TableDesc creates a new TableDesc instance.
    *
-   * @param tableName   of type String
-   * @param columnNames of type String[]
+   * @param tableName of type String
    */
-  public TableDesc( String tableName, String[] columnNames )
+  public TableDesc( String tableName )
     {
     this.tableName = tableName;
-    this.columnNames = columnNames;
     }
 
   /**

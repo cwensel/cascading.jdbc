@@ -51,6 +51,24 @@ public class JDBCTap extends Tap
 
   /**
    * Constructor JDBCTap creates a new JDBCTap instance.
+   * <p/>
+   * Use this constructor for connecting to exesting tables that will be read from, or will be inserted/updated
+   * into. By default it uses {@link SinkMode#APPEND}.
+   *
+   * @param connectionUrl   of type String
+   * @param username        of type String
+   * @param password        of type String
+   * @param driverClassName of type String
+   * @param tableName       of type String
+   * @param scheme          of type JDBCScheme
+   */
+  public JDBCTap( String connectionUrl, String username, String password, String driverClassName, String tableName, JDBCScheme scheme )
+    {
+    this( connectionUrl, username, password, driverClassName, new TableDesc( tableName ), scheme, SinkMode.APPEND );
+    }
+
+  /**
+   * Constructor JDBCTap creates a new JDBCTap instance.
    *
    * @param connectionUrl   of type String
    * @param driverClassName of type String
@@ -60,10 +78,7 @@ public class JDBCTap extends Tap
    */
   public JDBCTap( String connectionUrl, String driverClassName, TableDesc tableDesc, JDBCScheme scheme, SinkMode sinkMode )
     {
-    super( scheme, sinkMode );
-    this.connectionUrl = connectionUrl;
-    this.driverClassName = driverClassName;
-    this.tableDesc = tableDesc;
+    this( connectionUrl, null, null, driverClassName, tableDesc, scheme, sinkMode );
     }
 
   /**
@@ -100,6 +115,12 @@ public class JDBCTap extends Tap
     this.password = password;
     this.driverClassName = driverClassName;
     this.tableDesc = tableDesc;
+
+    if( tableDesc.getColumnDefs() == null && sinkMode != SinkMode.APPEND )
+      throw new IllegalArgumentException( "cannot have sink mode REPLACE or KEEP without TableDesc column defs, use APPEND mode" );
+
+    if( sinkMode != SinkMode.APPEND )
+      LOG.warn( "using sink mode: {}, consider APPEND to prevent DROP TABLE from being called during Flow or Cascade setup", sinkMode );
     }
 
   /**
@@ -114,7 +135,6 @@ public class JDBCTap extends Tap
     {
     this( connectionUrl, driverClassName, tableDesc, scheme, SinkMode.APPEND );
     }
-
 
   /**
    * Method getTableName returns the tableName of this JDBCTap object.
@@ -304,6 +324,9 @@ public class JDBCTap extends Tap
 
   public boolean deletePath( JobConf conf ) throws IOException
     {
+    if( !pathExists( conf ) )
+      return true;
+
     try
       {
       LOG.info( "deleting table: {}", tableDesc.tableName );
