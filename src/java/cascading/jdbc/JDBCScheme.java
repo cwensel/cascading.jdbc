@@ -37,6 +37,7 @@ public class JDBCScheme extends Scheme
   private Class<? extends DBOutputFormat> outputFormatClass;
   private String[] columns;
   private String[] orderBy;
+  private String conditions;
   private String[] updateBy;
   private Fields updateValueFields;
   private Fields updateByFields;
@@ -50,9 +51,10 @@ public class JDBCScheme extends Scheme
    * @param outputFormatClass of type Class<? extends DBOutputFormat>
    * @param columns           of type String[]
    * @param orderBy           of type String[]
+   * @param conditions        of type String
    * @param updateBy          of type String[]
    */
-  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, String[] columns, String[] orderBy, String[] updateBy )
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, String[] columns, String[] orderBy, String conditions, String[] updateBy )
     {
     this.columnFields = new Fields( columns );
 
@@ -73,9 +75,24 @@ public class JDBCScheme extends Scheme
 
     this.columns = columns;
     this.orderBy = orderBy;
+    this.conditions = conditions;
 
     this.inputFormatClass = inputFormatClass;
     this.outputFormatClass = outputFormatClass;
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param inputFormatClass  of type Class<? extends DBInputFormat>
+   * @param outputFormatClass of type Class<? extends DBOutputFormat>
+   * @param columns           of type String[]
+   * @param orderBy           of type String[]
+   * @param updateBy          of type String[]
+   */
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, String[] columns, String[] orderBy, String[] updateBy )
+    {
+    this( inputFormatClass, outputFormatClass, columns, orderBy, null, updateBy );
     }
 
   /**
@@ -93,12 +110,35 @@ public class JDBCScheme extends Scheme
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
    *
+   * @param columns    of type String[]
+   * @param orderBy    of type String[]
+   * @param conditions of type String
+   */
+  public JDBCScheme( String[] columns, String[] orderBy, String conditions )
+    {
+    this( null, null, columns, orderBy, conditions, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
    * @param columns of type String[]
    * @param orderBy of type String[]
    */
   public JDBCScheme( String[] columns, String[] orderBy )
     {
     this( null, null, columns, orderBy, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columns    of type String[]
+   * @param conditions of type String
+   */
+  public JDBCScheme( String[] columns, String conditions )
+    {
+    this( null, null, columns, null, conditions, null );
     }
 
   /**
@@ -115,7 +155,7 @@ public class JDBCScheme extends Scheme
     {
     String tableName = ( (JDBCTap) tap ).getTableName();
     String joinedOrderBy = orderBy != null ? Util.join( orderBy, ", " ) : null;
-    DBInputFormat.setInput( conf, TupleRecord.class, tableName, null, joinedOrderBy, columns );
+    DBInputFormat.setInput( conf, TupleRecord.class, tableName, conditions, joinedOrderBy, columns );
 
     if( inputFormatClass != null )
       conf.setInputFormat( inputFormatClass );
