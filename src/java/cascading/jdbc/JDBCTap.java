@@ -15,8 +15,12 @@ package cascading.jdbc;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import cascading.jdbc.db.DBConfiguration;
 import cascading.tap.SinkMode;
@@ -227,9 +231,17 @@ public class JDBCTap extends Tap
       }
     }
 
-  private void executeUpdate( String updateString )
+  /**
+   * Method executeUpdate allows for ad-hoc update statements to be sent to the remote RDBMS. The number of
+   * rows updated will be returned, if applicable.
+   *
+   * @param updateString of type String
+   * @return int
+   */
+  public int executeUpdate( String updateString )
     {
     Connection connection = null;
+    int result;
 
     try
       {
@@ -240,7 +252,9 @@ public class JDBCTap extends Tap
         LOG.info( "executing update: {}", updateString );
 
         Statement statement = connection.createStatement();
-        statement.executeUpdate( updateString );
+
+        result = statement.executeUpdate( updateString );
+
         connection.commit();
         statement.close();
         }
@@ -262,11 +276,22 @@ public class JDBCTap extends Tap
         LOG.warn( "ignoring connection close exception", exception );
         }
       }
+
+    return result;
     }
 
-  private void executeQuery( String queryString )
+  /**
+   * Method executeQuery allows for ad-hoc queries to be sent to the remove RDBMS. A value
+   * of -1 for returnResults will return a List of all results from the query, a value of 0 will return an empty List.
+   *
+   * @param queryString   of type String
+   * @param returnResults of type int
+   * @return List
+   */
+  public List<Object[]> executeQuery( String queryString, int returnResults )
     {
     Connection connection = null;
+    List<Object[]> result = Collections.emptyList();
 
     try
       {
@@ -277,7 +302,12 @@ public class JDBCTap extends Tap
         LOG.info( "executing query: {}", queryString );
 
         Statement statement = connection.createStatement();
-        statement.executeQuery( queryString ); // we don't care about results
+
+        ResultSet resultSet = statement.executeQuery( queryString ); // we don't care about results
+
+        if( returnResults != 0 )
+          result = copyResultSet( resultSet, returnResults == -1 ? Integer.MAX_VALUE : returnResults );
+
         connection.commit();
         statement.close();
         }
@@ -299,6 +329,30 @@ public class JDBCTap extends Tap
         LOG.warn( "ignoring connection close exception", exception );
         }
       }
+
+    return result;
+    }
+
+  private List<Object[]> copyResultSet( ResultSet resultSet, int length ) throws SQLException
+    {
+    List<Object[]> results = new ArrayList<Object[]>( length );
+    int size = resultSet.getMetaData().getColumnCount();
+
+    int count = 0;
+
+    while( resultSet.next() && count < length )
+      {
+      count++;
+
+      Object[] row = new Object[size];
+
+      for( int i = 0; i < row.length; i++ )
+        row[ i ] = resultSet.getObject( i + 1 );
+
+      results.add( row );
+      }
+
+    return results;
     }
 
   public boolean makeDirs( JobConf conf ) throws IOException
@@ -349,7 +403,7 @@ public class JDBCTap extends Tap
       {
       LOG.info( "test table exists: {}", tableDesc.tableName );
 
-      executeQuery( tableDesc.getTableExistsQuery() );
+      executeQuery( tableDesc.getTableExistsQuery(), 0 );
       }
     catch( TapException exception )
       {
