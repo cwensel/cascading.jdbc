@@ -81,6 +81,9 @@ public class DBConfiguration
   /** Whole input query, exluding LIMIT...OFFSET */
   public static final String INPUT_QUERY = "mapred.jdbc.input.query";
 
+  /** The number of records to LIMIT, useful for testing */
+  public static final String INPUT_LIMIT = "mapred.jdbc.input.limit";
+
   /** Input query to get the count of records */
   public static final String INPUT_COUNT_QUERY = "mapred.jdbc.input.count.query";
 
@@ -220,6 +223,16 @@ public class DBConfiguration
     {
     if( query != null && query.length() > 0 )
       job.set( DBConfiguration.INPUT_QUERY, query );
+    }
+
+  long getInputLimit()
+    {
+    return job.getLong( DBConfiguration.INPUT_LIMIT, -1 );
+    }
+
+  void setInputLimit( long limit )
+    {
+    job.setLong( DBConfiguration.INPUT_LIMIT, limit );
     }
 
   String getInputCountQuery()

@@ -294,6 +294,7 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
   protected String tableName;
   protected String[] fieldNames;
   protected String conditions;
+  protected long limit;
 
   /** {@inheritDoc} */
   public void configure( JobConf job )
@@ -303,6 +304,7 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
     tableName = dbConf.getInputTableName();
     fieldNames = dbConf.getInputFieldNames();
     conditions = dbConf.getInputConditions();
+    limit = dbConf.getInputLimit();
 
     try
       {
@@ -373,6 +375,10 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
       results.next();
 
       long count = results.getLong( 1 );
+
+      if( limit != -1 )
+        count = Math.min( limit, count );
+
       long chunkSize = ( count / chunks );
 
       results.close();
@@ -433,9 +439,9 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
    *                   20070101 AND length > 0)'
    * @param orderBy    the fieldNames in the orderBy clause.
    * @param fieldNames The field names in the table
-   * @see #setInput(JobConf, Class, String, String)
+   * @param limit
    */
-  public static void setInput( JobConf job, Class<? extends DBWritable> inputClass, String tableName, String conditions, String orderBy, String... fieldNames )
+  public static void setInput( JobConf job, Class<? extends DBWritable> inputClass, String tableName, String conditions, String orderBy, long limit, String... fieldNames )
     {
     job.setInputFormat( DBInputFormat.class );
 
@@ -445,33 +451,8 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
     dbConf.setInputFieldNames( fieldNames );
     dbConf.setInputConditions( conditions );
     dbConf.setInputOrderBy( orderBy );
-    }
 
-  /**
-   * Initializes the map-part of the job with the appropriate input settings.
-   *
-   * @param job                The job
-   * @param dbInputFormatClass
-   * @param inputClass         the class object implementing DBWritable, which is the
-   *                           Java object holding tuple fields.
-   * @param inputQuery         the input query to select fields. Example :
-   *                           "SELECT f1, f2, f3 FROM Mytable ORDER BY f1"
-   * @param inputCountQuery    the input query that returns the number of records in
-   *                           the table.
-   *                           Example : "SELECT COUNT(f1) FROM Mytable"
-   * @see #setInput(org.apache.hadoop.mapred.JobConf, Class, String, String, String, String...)
-   */
-  public static void setInput( JobConf job, Class<DBInputFormat> dbInputFormatClass, Class<? extends DBWritable> inputClass, String inputQuery, String inputCountQuery )
-    {
-    if( dbInputFormatClass == null )
-      job.setInputFormat( DBInputFormat.class );
-    else
-      job.setInputFormat( dbInputFormatClass );
-
-    DBConfiguration dbConf = new DBConfiguration( job );
-
-    dbConf.setInputClass( inputClass );
-    dbConf.setInputQuery( inputQuery );
-    dbConf.setInputCountQuery( inputCountQuery );
+    if( limit != -1 )
+      dbConf.setInputLimit( limit );
     }
   }

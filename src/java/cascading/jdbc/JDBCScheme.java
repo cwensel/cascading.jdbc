@@ -43,6 +43,7 @@ public class JDBCScheme extends Scheme
   private Fields updateByFields;
   private Fields columnFields;
   private Tuple updateIfTuple;
+  private long limit;
 
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
@@ -54,7 +55,7 @@ public class JDBCScheme extends Scheme
    * @param conditions        of type String
    * @param updateBy          of type String[]
    */
-  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, String[] columns, String[] orderBy, String conditions, String[] updateBy )
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, String[] columns, String[] orderBy, String conditions, long limit, String[] updateBy )
     {
     this.columnFields = new Fields( columns );
 
@@ -76,9 +77,15 @@ public class JDBCScheme extends Scheme
     this.columns = columns;
     this.orderBy = orderBy;
     this.conditions = conditions;
+    this.limit = limit;
 
     this.inputFormatClass = inputFormatClass;
     this.outputFormatClass = outputFormatClass;
+    }
+
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, String[] columns, String[] orderBy, String conditions, String[] updateBy )
+    {
+    this( inputFormatClass, outputFormatClass, columns, orderBy, conditions, -1, updateBy );
     }
 
   /**
@@ -113,10 +120,35 @@ public class JDBCScheme extends Scheme
    * @param columns    of type String[]
    * @param orderBy    of type String[]
    * @param conditions of type String
+   * @param limit      of type long
+   */
+  public JDBCScheme( String[] columns, String[] orderBy, String conditions, long limit )
+    {
+    this( null, null, columns, orderBy, conditions, limit, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columns    of type String[]
+   * @param orderBy    of type String[]
+   * @param conditions of type String
    */
   public JDBCScheme( String[] columns, String[] orderBy, String conditions )
     {
     this( null, null, columns, orderBy, conditions, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columns of type String[]
+   * @param orderBy of type String[]
+   * @param limit   of type long
+   */
+  public JDBCScheme( String[] columns, String[] orderBy, long limit )
+    {
+    this( null, null, columns, orderBy, null, limit, null );
     }
 
   /**
@@ -135,10 +167,33 @@ public class JDBCScheme extends Scheme
    *
    * @param columns    of type String[]
    * @param conditions of type String
+   * @param limit      of type long
+   */
+  public JDBCScheme( String[] columns, String conditions, long limit )
+    {
+    this( null, null, columns, null, conditions, limit, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columns    of type String[]
+   * @param conditions of type String
    */
   public JDBCScheme( String[] columns, String conditions )
     {
     this( null, null, columns, null, conditions, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columns of type String[]
+   * @param limit   of type long
+   */
+  public JDBCScheme( String[] columns, long limit )
+    {
+    this( null, null, columns, null, null, limit, null );
     }
 
   /**
@@ -155,7 +210,7 @@ public class JDBCScheme extends Scheme
     {
     String tableName = ( (JDBCTap) tap ).getTableName();
     String joinedOrderBy = orderBy != null ? Util.join( orderBy, ", " ) : null;
-    DBInputFormat.setInput( conf, TupleRecord.class, tableName, conditions, joinedOrderBy, columns );
+    DBInputFormat.setInput( conf, TupleRecord.class, tableName, conditions, joinedOrderBy, limit, columns );
 
     if( inputFormatClass != null )
       conf.setInputFormat( inputFormatClass );
