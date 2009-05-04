@@ -63,6 +63,9 @@ public class JDBCTest extends ClusterTestCase
 
   public void testJDBC() throws IOException
     {
+
+    // CREATE NEW TABLE FROM SOURCE
+
     Tap source = new Lfs( new TextLine(), inputFile );
 
     Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( new Fields( "num", "lower", "upper" ), "\\s" ) );
@@ -83,6 +86,8 @@ public class JDBCTest extends ClusterTestCase
 
     verifySink( parseFlow, 13 );
 
+    // READ DATA FROM TABLE INTO TEXT FILE
+
     // create flow to read from hbase and save to local file
     Tap sink = new Lfs( new TextLine(), "build/test/jdbc", SinkMode.REPLACE );
 
@@ -94,6 +99,8 @@ public class JDBCTest extends ClusterTestCase
 
     verifySink( copyFlow, 13 );
 
+    // READ DATA FROM TEXT FILE AND UPDATE TABLE
+
     JDBCScheme jdbcScheme = new JDBCScheme( columnNames, null, new String[]{"num", "lower"} );
     Tap updateTap = new JDBCTap( url, driver, tableDesc, jdbcScheme, SinkMode.APPEND );
 
@@ -102,6 +109,18 @@ public class JDBCTest extends ClusterTestCase
     updateFlow.complete();
 
     verifySink( updateFlow, 13 );
+
+    // READ DATA FROM TABLE INTO TEXT FILE, USING CUSTOM QUERY
+
+    Tap sourceTap = new JDBCTap( url, driver, new JDBCScheme( columnNames, "select num, lower, upper from testingtable as testingtable", "select count(*) from testingtable" ) );
+
+    Pipe readPipe = new Each( "read", new Identity() );
+
+    Flow readFlow = new FlowConnector( getProperties() ).connect( sourceTap, sink, readPipe );
+
+    readFlow.complete();
+
+    verifySink( readFlow, 13 );
     }
 
   private void verifySink( Flow flow, int expects ) throws IOException

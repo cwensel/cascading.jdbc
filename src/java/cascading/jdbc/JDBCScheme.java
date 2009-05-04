@@ -18,6 +18,7 @@ import cascading.jdbc.db.DBInputFormat;
 import cascading.jdbc.db.DBOutputFormat;
 import cascading.scheme.Scheme;
 import cascading.tap.Tap;
+import cascading.tap.TapException;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
@@ -43,7 +44,9 @@ public class JDBCScheme extends Scheme
   private Fields updateByFields;
   private Fields columnFields;
   private Tuple updateIfTuple;
-  private long limit;
+  private String selectQuery;
+  private String countQuery;
+  private long limit = -1;
 
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
@@ -83,6 +86,16 @@ public class JDBCScheme extends Scheme
     this.outputFormatClass = outputFormatClass;
     }
 
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param inputFormatClass  of type Class<? extends DBInputFormat>
+   * @param outputFormatClass of type Class<? extends DBOutputFormat>
+   * @param columns           of type String[]
+   * @param orderBy           of type String[]
+   * @param conditions        of type String
+   * @param updateBy          of type String[]
+   */
   public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, String[] columns, String[] orderBy, String conditions, String[] updateBy )
     {
     this( inputFormatClass, outputFormatClass, columns, orderBy, conditions, -1, updateBy );
@@ -206,11 +219,67 @@ public class JDBCScheme extends Scheme
     this( null, null, columns, null, null );
     }
 
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param inputFormatClass of type Class<? extends DBInputFormat>
+   * @param columns          of type String[]
+   * @param selectQuery      of type String
+   * @param countQuery       of type String
+   * @param limit            of type long
+   */
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, String[] columns, String selectQuery, String countQuery, long limit )
+    {
+    this.columnFields = new Fields( columns );
+
+    setSourceFields( columnFields );
+
+    this.columns = columns;
+    this.selectQuery = selectQuery;
+    this.countQuery = countQuery;
+    this.limit = limit;
+
+    this.inputFormatClass = inputFormatClass;
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columns     of type String[]
+   * @param selectQuery of type String
+   * @param countQuery  of type String
+   * @param limit       of type long
+   */
+  public JDBCScheme( String[] columns, String selectQuery, String countQuery, long limit )
+    {
+    this( null, columns, selectQuery, countQuery, limit );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columns     of type String[]
+   * @param selectQuery of type String
+   * @param countQuery  of type String
+   */
+  public JDBCScheme( String[] columns, String selectQuery, String countQuery )
+    {
+    this( null, columns, selectQuery, countQuery, -1 );
+    }
+
+
   public void sourceInit( Tap tap, JobConf conf ) throws IOException
     {
-    String tableName = ( (JDBCTap) tap ).getTableName();
-    String joinedOrderBy = orderBy != null ? Util.join( orderBy, ", " ) : null;
-    DBInputFormat.setInput( conf, TupleRecord.class, tableName, conditions, joinedOrderBy, limit, columns );
+    if( selectQuery != null )
+      {
+      DBInputFormat.setInput( conf, TupleRecord.class, selectQuery, countQuery, limit );
+      }
+    else
+      {
+      String tableName = ( (JDBCTap) tap ).getTableName();
+      String joinedOrderBy = orderBy != null ? Util.join( orderBy, ", " ) : null;
+      DBInputFormat.setInput( conf, TupleRecord.class, tableName, conditions, joinedOrderBy, limit, columns );
+      }
 
     if( inputFormatClass != null )
       conf.setInputFormat( inputFormatClass );
@@ -218,6 +287,9 @@ public class JDBCScheme extends Scheme
 
   public void sinkInit( Tap tap, JobConf conf ) throws IOException
     {
+    if( selectQuery != null )
+      throw new TapException( "cannot sink to this Scheme" );
+
     String tableName = ( (JDBCTap) tap ).getTableName();
     DBOutputFormat.setOutput( conf, DBOutputFormat.class, tableName, columns, updateBy );
 

@@ -358,9 +358,9 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
       {
       return new DBRecordReader( (DBInputSplit) split, inputClass, job );
       }
-    catch( SQLException ex )
+    catch( SQLException exception )
       {
-      throw new IOException( ex.getMessage() );
+      throw new IOException( exception.getMessage(), exception );
       }
     }
 
@@ -446,11 +446,40 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
     job.setInputFormat( DBInputFormat.class );
 
     DBConfiguration dbConf = new DBConfiguration( job );
+
     dbConf.setInputClass( inputClass );
     dbConf.setInputTableName( tableName );
     dbConf.setInputFieldNames( fieldNames );
     dbConf.setInputConditions( conditions );
     dbConf.setInputOrderBy( orderBy );
+
+    if( limit != -1 )
+      dbConf.setInputLimit( limit );
+    }
+
+  /**
+   * Initializes the map-part of the job with the appropriate input settings.
+   *
+   * @param job                The job
+   * @param dbInputFormatClass
+   * @param inputClass         the class object implementing DBWritable, which is the
+   *                           Java object holding tuple fields.
+   * @param selectQuery        the input query to select fields. Example :
+   *                           "SELECT f1, f2, f3 FROM Mytable ORDER BY f1"
+   * @param countQuery         the input query that returns the number of records in
+   *                           the table.
+   *                           Example : "SELECT COUNT(f1) FROM Mytable"
+   * @see #setInput(org.apache.hadoop.mapred.JobConf, Class, String, String, String, String...)
+   */
+  public static void setInput( JobConf job, Class<? extends DBWritable> inputClass, String selectQuery, String countQuery, long limit )
+    {
+    job.setInputFormat( DBInputFormat.class );
+
+    DBConfiguration dbConf = new DBConfiguration( job );
+
+    dbConf.setInputClass( inputClass );
+    dbConf.setInputQuery( selectQuery );
+    dbConf.setInputCountQuery( countQuery );
 
     if( limit != -1 )
       dbConf.setInputLimit( limit );

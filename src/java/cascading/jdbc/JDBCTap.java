@@ -141,6 +141,36 @@ public class JDBCTap extends Tap
     }
 
   /**
+   * Constructor JDBCTap creates a new JDBCTap instance that may only used as a data source.
+   *
+   * @param connectionUrl   of type String
+   * @param username        of type String
+   * @param password        of type String
+   * @param driverClassName of type String
+   * @param scheme          of type JDBCScheme
+   */
+  public JDBCTap( String connectionUrl, String username, String password, String driverClassName, JDBCScheme scheme )
+    {
+    super( scheme );
+    this.connectionUrl = connectionUrl;
+    this.username = username;
+    this.password = password;
+    this.driverClassName = driverClassName;
+    }
+
+  /**
+   * Constructor JDBCTap creates a new JDBCTap instance.
+   *
+   * @param connectionUrl   of type String
+   * @param driverClassName of type String
+   * @param scheme          of type JDBCScheme
+   */
+  public JDBCTap( String connectionUrl, String driverClassName, JDBCScheme scheme )
+    {
+    this( connectionUrl, null, null, driverClassName, scheme );
+    }
+
+  /**
    * Method getTableName returns the tableName of this JDBCTap object.
    *
    * @return the tableName (type String) of this JDBCTap object.
@@ -167,7 +197,16 @@ public class JDBCTap extends Tap
 
   public TupleEntryCollector openForWrite( JobConf conf ) throws IOException
     {
+    if( !isSink() )
+      throw new TapException( "this tap may not be used as a sink, no TableDesc defined" );
+
     return new TapCollector( this, conf );
+    }
+
+  @Override
+  public boolean isSink()
+    {
+    return tableDesc != null;
     }
 
   @Override
@@ -187,6 +226,9 @@ public class JDBCTap extends Tap
   @Override
   public void sinkInit( JobConf conf ) throws IOException
     {
+    if( !isSink() )
+      return;
+
     // do not delete if initialized from within a task
     if( isReplace() && conf.get( "mapred.task.partition" ) == null && !deletePath( conf ) )
       throw new TapException( "unable to drop table: " + tableDesc.getTableName() );
@@ -378,6 +420,9 @@ public class JDBCTap extends Tap
 
   public boolean deletePath( JobConf conf ) throws IOException
     {
+    if( !isSink() )
+      return false;
+
     if( !pathExists( conf ) )
       return true;
 
@@ -399,6 +444,9 @@ public class JDBCTap extends Tap
 
   public boolean pathExists( JobConf conf ) throws IOException
     {
+    if( !isSink() )
+      return true;
+
     try
       {
       LOG.info( "test table exists: {}", tableDesc.tableName );
