@@ -47,6 +47,8 @@ import org.apache.hadoop.mapred.JobConfigurable;
 import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A InputFormat that reads input data from an SQL table.
@@ -59,6 +61,9 @@ import org.apache.hadoop.util.ReflectionUtils;
  */
 public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWritable, T>, JobConfigurable
   {
+  /** Field LOG */
+  private static final Logger LOG = LoggerFactory.getLogger( DBInputFormat.class );
+
   /**
    * A RecordReader that reads records from a SQL table.
    * Emits LongWritables containing the record number as
@@ -93,6 +98,7 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
         }
       catch( SQLException exception )
         {
+        LOG.error( "unable to execute select query: " + query, exception );
         throw new IOException( "unable to execute select query: " + query, exception );
         }
       }

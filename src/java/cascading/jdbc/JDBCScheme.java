@@ -235,8 +235,8 @@ public class JDBCScheme extends Scheme
     setSourceFields( columnFields );
 
     this.columns = columns;
-    this.selectQuery = selectQuery;
-    this.countQuery = countQuery;
+    this.selectQuery = selectQuery.trim().replaceAll( ";$", "" );
+    this.countQuery = countQuery.trim().replaceAll( ";$", "" );
     this.limit = limit;
 
     this.inputFormatClass = inputFormatClass;
