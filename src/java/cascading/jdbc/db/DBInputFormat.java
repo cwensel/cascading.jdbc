@@ -77,7 +77,7 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
      * @param split The InputSplit to read data for
      * @throws SQLException
      */
-    protected DBRecordReader( DBInputSplit split, Class<T> inputClass, JobConf job ) throws SQLException
+    protected DBRecordReader( DBInputSplit split, Class<T> inputClass, JobConf job ) throws SQLException, IOException
       {
       this.inputClass = inputClass;
       this.split = split;
@@ -86,7 +86,15 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
       statement = connection.createStatement( ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY );
 
       //statement.setFetchSize(Integer.MIN_VALUE);
-      results = statement.executeQuery( getSelectQuery() );
+      String query = getSelectQuery();
+      try
+        {
+        results = statement.executeQuery( query );
+        }
+      catch( SQLException exception )
+        {
+        throw new IOException( "unable to execute select query: " + query, exception );
+        }
       }
 
     /**
