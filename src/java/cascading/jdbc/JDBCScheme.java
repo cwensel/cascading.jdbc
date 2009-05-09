@@ -291,7 +291,8 @@ public class JDBCScheme extends Scheme
       throw new TapException( "cannot sink to this Scheme" );
 
     String tableName = ( (JDBCTap) tap ).getTableName();
-    DBOutputFormat.setOutput( conf, DBOutputFormat.class, tableName, columns, updateBy );
+    int batchSize = ( (JDBCTap) tap ).getBatchSize();
+    DBOutputFormat.setOutput( conf, DBOutputFormat.class, tableName, columns, updateBy, batchSize );
 
     if( outputFormatClass != null )
       conf.setOutputFormat( outputFormatClass );

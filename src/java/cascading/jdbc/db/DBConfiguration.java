@@ -291,7 +291,7 @@ public class DBConfiguration
     return job.getInt( DBConfiguration.BATCH_STATEMENTS_NUM, 1000 );
     }
 
-  void setOutputFieldNames( int batchStatementsNum )
+  void setBatchStatementsNum( int batchStatementsNum )
     {
     job.setInt( DBConfiguration.BATCH_STATEMENTS_NUM, batchStatementsNum );
     }

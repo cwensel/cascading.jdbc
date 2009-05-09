@@ -52,6 +52,8 @@ public class JDBCTap extends Tap
   String driverClassName;
   /** Field tableDesc */
   TableDesc tableDesc;
+  /** Field batchSize */
+  int batchSize = 1000;
 
   /**
    * Constructor JDBCTap creates a new JDBCTap instance.
@@ -178,6 +180,26 @@ public class JDBCTap extends Tap
   public String getTableName()
     {
     return tableDesc.tableName;
+    }
+
+  /**
+   * Method setBatchSize sets the batchSize of this JDBCTap object.
+   *
+   * @param batchSize the batchSize of this JDBCTap object.
+   */
+  public void setBatchSize( int batchSize )
+    {
+    this.batchSize = batchSize;
+    }
+
+  /**
+   * Method getBatchSize returns the batchSize of this JDBCTap object.
+   *
+   * @return the batchSize (type int) of this JDBCTap object.
+   */
+  public int getBatchSize()
+    {
+    return batchSize;
     }
 
   /**

@@ -360,7 +360,7 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
    * @param tableName           The table to insert data into
    * @param fieldNames          The field names in the table. If unknown, supply the appropriate
    */
-  public static void setOutput( JobConf job, Class<? extends DBOutputFormat> dbOutputFormatClass, String tableName, String[] fieldNames, String[] updateFields )
+  public static void setOutput( JobConf job, Class<? extends DBOutputFormat> dbOutputFormatClass, String tableName, String[] fieldNames, String[] updateFields, int batchSize )
     {
     if( dbOutputFormatClass == null )
       job.setOutputFormat( DBOutputFormat.class );
@@ -378,5 +378,8 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
 
     if( updateFields != null )
       dbConf.setOutputUpdateFieldNames( updateFields );
+
+    if( batchSize != -1 )
+      dbConf.setBatchStatementsNum( batchSize );
     }
   }
