@@ -6,6 +6,9 @@ Welcome
  It provides support for reading/writing data to/from an RDBMS via
  JDBC drivers when bound to a Cascading data processing flow.
 
+ INSERT and UPDATE are both supported during sinking. Custom SELECTs
+ can also be used during sourcing.
+
  Cascading is a feature rich API for defining and executing complex,
  scale-free, and fault tolerant data processing workflows on a Hadoop
  cluster. It can be found at the following location:
@@ -36,6 +39,8 @@ Using
 
   See the JDBCTest unit test for sample code on using the JDBC taps and
   schemes in your Cascading application.
+
+  You must also include a JDBC driver library for your database.
 
 License
 

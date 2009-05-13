@@ -36,7 +36,34 @@ import org.apache.hadoop.mapred.JobConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Class JDBCTap is a {@link Tap} subclass that provides read and write access to a RDBMS. */
+/**
+ * Class JDBCTap is a {@link Tap} sub-class that provides read and write access to a RDBMS via JDBC drivers.
+ * <p/>
+ * This Tap fully supports TABLE DROP and CREATE when given a {@link TableDesc} instance.
+ * <p/>
+ * When using {@link SinkMode#APPEND}, Cascading is instructed to not delete the resource (drop the Table)
+ * and assumes its safe to begin sinking data into it. The {@link JDBCScheme} is responsible for
+ * deciding if/when to perform an UPDATE instead of an INSERT.
+ * <p/>
+ * Both INSERT and UPDATE are supported through the JDBCScheme.
+ * <p/>
+ * By sub-classing JDBCScheme, {@link cascading.jdbc.db.DBInputFormat}, and {@link cascading.jdbc.db.DBOutputFormat},
+ * specific vendor features can be supported.
+ * <p/>
+ * Use {@link #setBatchSize(int)} to set the number of INSERT/UPDATES should be grouped together before being
+ * executed. The default vaue is 1,000.
+ * <p/>
+ * Use {@link #executeQuery(String, int)} or {@link #executeUpdate(String)} to invoke SQL statements against
+ * the underlying Table.
+ * <p/>
+ * Note that all classes under the {@link cascading.jdbc.db} package originated from the Hadoop project and
+ * retain their Apache 2.0 license though they have been heavily modified to support INSERT/UPDATE and
+ * vendor specialization, and a number of other features like 'limit'.
+ *
+ * @see JDBCScheme
+ * @see cascading.jdbc.db.DBInputFormat
+ * @see cascading.jdbc.db.DBOutputFormat
+ */
 public class JDBCTap extends Tap
   {
   /** Field LOG */
@@ -58,7 +85,7 @@ public class JDBCTap extends Tap
   /**
    * Constructor JDBCTap creates a new JDBCTap instance.
    * <p/>
-   * Use this constructor for connecting to exesting tables that will be read from, or will be inserted/updated
+   * Use this constructor for connecting to existing tables that will be read from, or will be inserted/updated
    * into. By default it uses {@link SinkMode#APPEND}.
    *
    * @param connectionUrl   of type String
@@ -89,6 +116,9 @@ public class JDBCTap extends Tap
 
   /**
    * Constructor JDBCTap creates a new JDBCTap instance.
+   * <p/>
+   * Use this constructor for connecting to existing tables that will be read from, or will be inserted/updated
+   * into. By default it uses {@link SinkMode#APPEND}.
    *
    * @param connectionUrl   of type String
    * @param username        of type String
@@ -131,6 +161,9 @@ public class JDBCTap extends Tap
 
   /**
    * Constructor JDBCTap creates a new JDBCTap instance.
+   * <p/>
+   * Use this constructor for connecting to existing tables that will be read from, or will be inserted/updated
+   * into. By default it uses {@link SinkMode#APPEND}.
    *
    * @param connectionUrl   of type String
    * @param driverClassName of type String

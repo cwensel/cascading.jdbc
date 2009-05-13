@@ -31,6 +31,8 @@ import org.apache.hadoop.mapred.OutputCollector;
  * <p/>
  * If updateBy column names are given, a SQL UPDATE statement will be generated if the values in those columns
  * for the given Tuple are all not {@code null}. Otherwise an INSERT statement will be generated.
+ * <p/>
+ * Override this class, {@link DBInputFormat}, and {@link DBOutputFormat} to specialize for a given vendor database.
  */
 public class JDBCScheme extends Scheme
   {
@@ -221,6 +223,8 @@ public class JDBCScheme extends Scheme
 
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
+   * <p/>
+   * Use this constructor if the data source may only be used as a source.
    *
    * @param inputFormatClass of type Class<? extends DBInputFormat>
    * @param columns          of type String[]
@@ -244,6 +248,8 @@ public class JDBCScheme extends Scheme
 
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
+   * <p/>
+   * Use this constructor if the data source may only be used as a source.
    *
    * @param columns     of type String[]
    * @param selectQuery of type String
@@ -257,6 +263,8 @@ public class JDBCScheme extends Scheme
 
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
+   * <p/>
+   * Use this constructor if the data source may only be used as a source.
    *
    * @param columns     of type String[]
    * @param selectQuery of type String
