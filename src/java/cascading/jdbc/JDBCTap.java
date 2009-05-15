@@ -526,4 +526,43 @@ public class JDBCTap extends Tap
     {
     return "JDBCTap{" + "connectionUrl='" + connectionUrl + '\'' + ", driverClassName='" + driverClassName + '\'' + ", tableDesc=" + tableDesc + '}';
     }
+
+  @Override
+  public boolean equals( Object object )
+    {
+    if( this == object )
+      return true;
+    if( !( object instanceof JDBCTap ) )
+      return false;
+    if( !super.equals( object ) )
+      return false;
+
+    JDBCTap jdbcTap = (JDBCTap) object;
+
+    if( connectionUrl != null ? !connectionUrl.equals( jdbcTap.connectionUrl ) : jdbcTap.connectionUrl != null )
+      return false;
+    if( driverClassName != null ? !driverClassName.equals( jdbcTap.driverClassName ) : jdbcTap.driverClassName != null )
+      return false;
+    if( password != null ? !password.equals( jdbcTap.password ) : jdbcTap.password != null )
+      return false;
+    if( tableDesc != null ? !tableDesc.equals( jdbcTap.tableDesc ) : jdbcTap.tableDesc != null )
+      return false;
+    if( username != null ? !username.equals( jdbcTap.username ) : jdbcTap.username != null )
+      return false;
+
+    return true;
+    }
+
+  @Override
+  public int hashCode()
+    {
+    int result = super.hashCode();
+    result = 31 * result + ( connectionUrl != null ? connectionUrl.hashCode() : 0 );
+    result = 31 * result + ( username != null ? username.hashCode() : 0 );
+    result = 31 * result + ( password != null ? password.hashCode() : 0 );
+    result = 31 * result + ( driverClassName != null ? driverClassName.hashCode() : 0 );
+    result = 31 * result + ( tableDesc != null ? tableDesc.hashCode() : 0 );
+    result = 31 * result + batchSize;
+    return result;
+    }
   }

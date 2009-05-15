@@ -166,4 +166,36 @@ public class TableDesc implements Serializable
     {
     return "TableDesc{" + "tableName='" + tableName + '\'' + ", columnNames=" + ( columnNames == null ? null : Arrays.asList( columnNames ) ) + ", columnDefs=" + ( columnDefs == null ? null : Arrays.asList( columnDefs ) ) + ", primaryKeys=" + ( primaryKeys == null ? null : Arrays.asList( primaryKeys ) ) + '}';
     }
+
+  @Override
+  public boolean equals( Object object )
+    {
+    if( this == object )
+      return true;
+    if( !( object instanceof TableDesc ) )
+      return false;
+
+    TableDesc tableDesc = (TableDesc) object;
+
+    if( !Arrays.equals( columnDefs, tableDesc.columnDefs ) )
+      return false;
+    if( !Arrays.equals( columnNames, tableDesc.columnNames ) )
+      return false;
+    if( !Arrays.equals( primaryKeys, tableDesc.primaryKeys ) )
+      return false;
+    if( tableName != null ? !tableName.equals( tableDesc.tableName ) : tableDesc.tableName != null )
+      return false;
+
+    return true;
+    }
+
+  @Override
+  public int hashCode()
+    {
+    int result = tableName != null ? tableName.hashCode() : 0;
+    result = 31 * result + ( columnNames != null ? Arrays.hashCode( columnNames ) : 0 );
+    result = 31 * result + ( columnDefs != null ? Arrays.hashCode( columnDefs ) : 0 );
+    result = 31 * result + ( primaryKeys != null ? Arrays.hashCode( primaryKeys ) : 0 );
+    return result;
+    }
   }

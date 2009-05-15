@@ -13,6 +13,7 @@
 package cascading.jdbc;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import cascading.jdbc.db.DBInputFormat;
 import cascading.jdbc.db.DBOutputFormat;
@@ -329,5 +330,67 @@ public class JDBCScheme extends Scheme
       }
 
     outputCollector.collect( new TupleRecord( tupleEntry.selectTuple( getSinkFields() ) ), null );
+    }
+
+  @Override
+  public boolean equals( Object object )
+    {
+    if( this == object )
+      return true;
+    if( !( object instanceof JDBCScheme ) )
+      return false;
+    if( !super.equals( object ) )
+      return false;
+
+    JDBCScheme that = (JDBCScheme) object;
+
+    if( limit != that.limit )
+      return false;
+    if( columnFields != null ? !columnFields.equals( that.columnFields ) : that.columnFields != null )
+      return false;
+    if( !Arrays.equals( columns, that.columns ) )
+      return false;
+    if( conditions != null ? !conditions.equals( that.conditions ) : that.conditions != null )
+      return false;
+    if( countQuery != null ? !countQuery.equals( that.countQuery ) : that.countQuery != null )
+      return false;
+    if( inputFormatClass != null ? !inputFormatClass.equals( that.inputFormatClass ) : that.inputFormatClass != null )
+      return false;
+    if( !Arrays.equals( orderBy, that.orderBy ) )
+      return false;
+    if( outputFormatClass != null ? !outputFormatClass.equals( that.outputFormatClass ) : that.outputFormatClass != null )
+      return false;
+    if( selectQuery != null ? !selectQuery.equals( that.selectQuery ) : that.selectQuery != null )
+      return false;
+    if( !Arrays.equals( updateBy, that.updateBy ) )
+      return false;
+    if( updateByFields != null ? !updateByFields.equals( that.updateByFields ) : that.updateByFields != null )
+      return false;
+    if( updateIfTuple != null ? !updateIfTuple.equals( that.updateIfTuple ) : that.updateIfTuple != null )
+      return false;
+    if( updateValueFields != null ? !updateValueFields.equals( that.updateValueFields ) : that.updateValueFields != null )
+      return false;
+
+    return true;
+    }
+
+  @Override
+  public int hashCode()
+    {
+    int result = super.hashCode();
+    result = 31 * result + ( inputFormatClass != null ? inputFormatClass.hashCode() : 0 );
+    result = 31 * result + ( outputFormatClass != null ? outputFormatClass.hashCode() : 0 );
+    result = 31 * result + ( columns != null ? Arrays.hashCode( columns ) : 0 );
+    result = 31 * result + ( orderBy != null ? Arrays.hashCode( orderBy ) : 0 );
+    result = 31 * result + ( conditions != null ? conditions.hashCode() : 0 );
+    result = 31 * result + ( updateBy != null ? Arrays.hashCode( updateBy ) : 0 );
+    result = 31 * result + ( updateValueFields != null ? updateValueFields.hashCode() : 0 );
+    result = 31 * result + ( updateByFields != null ? updateByFields.hashCode() : 0 );
+    result = 31 * result + ( columnFields != null ? columnFields.hashCode() : 0 );
+    result = 31 * result + ( updateIfTuple != null ? updateIfTuple.hashCode() : 0 );
+    result = 31 * result + ( selectQuery != null ? selectQuery.hashCode() : 0 );
+    result = 31 * result + ( countQuery != null ? countQuery.hashCode() : 0 );
+    result = 31 * result + (int) ( limit ^ ( limit >>> 32 ) );
+    return result;
     }
   }
