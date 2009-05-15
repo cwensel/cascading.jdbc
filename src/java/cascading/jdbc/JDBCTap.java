@@ -81,6 +81,8 @@ public class JDBCTap extends Tap
   TableDesc tableDesc;
   /** Field batchSize */
   int batchSize = 1000;
+  /** Field concurrentReads */
+  int concurrentReads = -1;
 
   /**
    * Constructor JDBCTap creates a new JDBCTap instance.
@@ -236,6 +238,32 @@ public class JDBCTap extends Tap
     }
 
   /**
+   * Method getConcurrentReads returns the concurrentReads of this JDBCTap object.
+   * <p/>
+   * This value specifies the number of concurrent selects and thus the number of mappers
+   * that may be used. A value of -1 uses the job default.
+   *
+   * @return the concurrentReads (type int) of this JDBCTap object.
+   */
+  public int getConcurrentReads()
+    {
+    return concurrentReads;
+    }
+
+  /**
+   * Method setConcurrentReads sets the concurrentReads of this JDBCTap object.
+   * <p/>
+   * This value specifies the number of concurrent selects and thus the number of mappers
+   * that may be used. A value of -1 uses the job default.
+   *
+   * @param concurrentReads the concurrentReads of this JDBCTap object.
+   */
+  public void setConcurrentReads( int concurrentReads )
+    {
+    this.concurrentReads = concurrentReads;
+    }
+
+  /**
    * Method getPath returns the path of this JDBCTap object.
    *
    * @return the path (type Path) of this JDBCTap object.
@@ -274,6 +302,9 @@ public class JDBCTap extends Tap
       DBConfiguration.configureDB( conf, driverClassName, connectionUrl );
     else
       DBConfiguration.configureDB( conf, driverClassName, connectionUrl, username, password );
+
+    if( concurrentReads != -1 )
+      conf.setNumMapTasks( concurrentReads );
 
     super.sourceInit( conf );
     }
