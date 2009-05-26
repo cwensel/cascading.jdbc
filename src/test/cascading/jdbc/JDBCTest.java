@@ -123,6 +123,71 @@ public class JDBCTest extends ClusterTestCase
     verifySink( readFlow, 13 );
     }
 
+  public void testJDBCAliased() throws IOException
+    {
+
+    // CREATE NEW TABLE FROM SOURCE
+
+    Tap source = new Lfs( new TextLine(), inputFile );
+
+    Fields columnFields = new Fields( "num", "lower", "upper" );
+    Pipe parsePipe = new Each( "insert", new Fields( "line" ), new RegexSplitter( columnFields, "\\s" ) );
+
+    String url = "jdbc:hsqldb:hsql://localhost/testing";
+    String driver = "org.hsqldb.jdbcDriver";
+    String tableName = "testingtablealias";
+    String[] columnNames = {"db_num", "db_lower", "db_upper"};
+    String[] columnDefs = {"VARCHAR(100) NOT NULL", "VARCHAR(100) NOT NULL", "VARCHAR(100) NOT NULL"};
+    String[] primaryKeys = {"db_num", "db_lower"};
+    TableDesc tableDesc = new TableDesc( tableName, columnNames, columnDefs, primaryKeys );
+
+    Tap replaceTap = new JDBCTap( url, driver, tableDesc, new JDBCScheme( columnFields, columnNames ), SinkMode.REPLACE );
+
+    Flow parseFlow = new FlowConnector( getProperties() ).connect( source, replaceTap, parsePipe );
+
+    parseFlow.complete();
+
+    verifySink( parseFlow, 13 );
+
+    // READ DATA FROM TABLE INTO TEXT FILE
+
+    // create flow to read from hbase and save to local file
+    Tap sink = new Lfs( new TextLine(), "build/test/jdbc", SinkMode.REPLACE );
+
+    Pipe copyPipe = new Each( "read", new Identity() );
+
+    Flow copyFlow = new FlowConnector( getProperties() ).connect( replaceTap, sink, copyPipe );
+
+    copyFlow.complete();
+
+    verifySink( copyFlow, 13 );
+
+    // READ DATA FROM TEXT FILE AND UPDATE TABLE
+
+    Fields updateByFields = new Fields( "num", "lower" );
+    String[] updateBy = {"db_num", "db_lower"};
+    JDBCScheme jdbcScheme = new JDBCScheme( columnFields, columnNames, null, updateByFields, updateBy );
+    Tap updateTap = new JDBCTap( url, driver, tableDesc, jdbcScheme, SinkMode.APPEND );
+
+    Flow updateFlow = new FlowConnector( getProperties() ).connect( sink, updateTap, parsePipe );
+
+    updateFlow.complete();
+
+    verifySink( updateFlow, 13 );
+
+    // READ DATA FROM TABLE INTO TEXT FILE, USING CUSTOM QUERY
+
+    Tap sourceTap = new JDBCTap( url, driver, new JDBCScheme( columnFields, columnNames, "select db_num, db_lower, db_upper from testingtablealias as testingtablealias", "select count(*) from testingtablealias" ) );
+
+    Pipe readPipe = new Each( "read", new Identity() );
+
+    Flow readFlow = new FlowConnector( getProperties() ).connect( sourceTap, sink, readPipe );
+
+    readFlow.complete();
+
+    verifySink( readFlow, 13 );
+    }
+
   private void verifySink( Flow flow, int expects ) throws IOException
     {
     int count = 0;

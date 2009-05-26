@@ -33,6 +33,11 @@ import org.apache.hadoop.mapred.OutputCollector;
  * If updateBy column names are given, a SQL UPDATE statement will be generated if the values in those columns
  * for the given Tuple are all not {@code null}. Otherwise an INSERT statement will be generated.
  * <p/>
+ * Some constructors take columnFields and updateByFields. These values will be used during field name resolution
+ * to bind this Scheme to the source and sink branches in a give assembly. These fields 'alias' the column names
+ * in the respective arrays. In other words, if your DB TABLE has different column names than your assembly exepects,
+ * use the Fields arguments to bind the assembly to the table. Both Fields and array must be the same size.
+ * <p/>
  * Override this class, {@link DBInputFormat}, and {@link DBOutputFormat} to specialize for a given vendor database.
  */
 public class JDBCScheme extends Scheme
@@ -59,11 +64,32 @@ public class JDBCScheme extends Scheme
    * @param columns           of type String[]
    * @param orderBy           of type String[]
    * @param conditions        of type String
+   * @param limit             of type long
    * @param updateBy          of type String[]
    */
   public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, String[] columns, String[] orderBy, String conditions, long limit, String[] updateBy )
     {
-    this.columnFields = new Fields( columns );
+    this( inputFormatClass, outputFormatClass, new Fields( columns ), columns, orderBy, conditions, limit, updateBy != null ? new Fields( updateBy ) : null, updateBy );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param inputFormatClass  of type Class<? extends DBInputFormat>
+   * @param outputFormatClass of type Class<? extends DBOutputFormat>
+   * @param columnFields      of type Fields
+   * @param columns           of type String[]
+   * @param orderBy           of type String[]
+   * @param conditions        of type String
+   * @param limit             of type long
+   * @param updateByFields    of type Fields
+   * @param updateBy          of type String[]
+   */
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, Fields columnFields, String[] columns, String[] orderBy, String conditions, long limit, Fields updateByFields, String[] updateBy )
+    {
+    this.columnFields = columnFields;
+
+    verifyColumns( columnFields, columns );
 
     setSinkFields( columnFields );
     setSourceFields( columnFields );
@@ -71,10 +97,13 @@ public class JDBCScheme extends Scheme
     if( updateBy != null && updateBy.length != 0 )
       {
       this.updateBy = updateBy;
-      this.updateByFields = new Fields( updateBy );
+      this.updateByFields = updateByFields;
+
+      if( updateByFields.size() != updateBy.length )
+        throw new IllegalArgumentException( "updateByFields and updateBy must be the same size" );
 
       if( !this.columnFields.contains( this.updateByFields ) )
-        throw new IllegalArgumentException( "columns must contain updateBy column names" );
+        throw new IllegalArgumentException( "columnFields must contain updateByFields column names" );
 
       this.updateValueFields = columnFields.subtract( updateByFields ).append( updateByFields );
       this.updateIfTuple = Tuple.size( updateByFields.size() ); // all nulls
@@ -87,6 +116,12 @@ public class JDBCScheme extends Scheme
 
     this.inputFormatClass = inputFormatClass;
     this.outputFormatClass = outputFormatClass;
+    }
+
+  private void verifyColumns( Fields columnFields, String[] columns )
+    {
+    if( columnFields.size() != columns.length )
+      throw new IllegalArgumentException( "columnFields and columns must be the same size" );
     }
 
   /**
@@ -109,6 +144,23 @@ public class JDBCScheme extends Scheme
    *
    * @param inputFormatClass  of type Class<? extends DBInputFormat>
    * @param outputFormatClass of type Class<? extends DBOutputFormat>
+   * @param columnFields      of type Fields
+   * @param columns           of type String[]
+   * @param orderBy           of type String[]
+   * @param conditions        of type String
+   * @param updateByFields    of type Fields
+   * @param updateBy          of type String[]
+   */
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, Fields columnFields, String[] columns, String[] orderBy, String conditions, Fields updateByFields, String[] updateBy )
+    {
+    this( inputFormatClass, outputFormatClass, columnFields, columns, orderBy, conditions, -1, updateByFields, updateBy );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param inputFormatClass  of type Class<? extends DBInputFormat>
+   * @param outputFormatClass of type Class<? extends DBOutputFormat>
    * @param columns           of type String[]
    * @param orderBy           of type String[]
    * @param updateBy          of type String[]
@@ -121,6 +173,22 @@ public class JDBCScheme extends Scheme
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
    *
+   * @param inputFormatClass  of type Class<? extends DBInputFormat>
+   * @param outputFormatClass of type Class<? extends DBOutputFormat>
+   * @param columnFields      of type Fields
+   * @param columns           of type String[]
+   * @param orderBy           of type String[]
+   * @param updateByFields    of type Fields
+   * @param updateBy          of type String[]
+   */
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Class<? extends DBOutputFormat> outputFormatClass, Fields columnFields, String[] columns, String[] orderBy, Fields updateByFields, String[] updateBy )
+    {
+    this( inputFormatClass, outputFormatClass, columnFields, columns, orderBy, null, -1, updateByFields, updateBy );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
    * @param columns  of type String[]
    * @param orderBy  of type String[]
    * @param updateBy of type String[]
@@ -128,6 +196,20 @@ public class JDBCScheme extends Scheme
   public JDBCScheme( String[] columns, String[] orderBy, String[] updateBy )
     {
     this( null, null, columns, orderBy, updateBy );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columnFields   of type Fields
+   * @param columns        of type String[]
+   * @param orderBy        of type String[]
+   * @param updateByFields of type Fields
+   * @param updateBy       of type String[]
+   */
+  public JDBCScheme( Fields columnFields, String[] columns, String[] orderBy, Fields updateByFields, String[] updateBy )
+    {
+    this( null, null, columnFields, columns, orderBy, updateByFields, updateBy );
     }
 
   /**
@@ -146,6 +228,20 @@ public class JDBCScheme extends Scheme
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
    *
+   * @param columnFields of type Fields
+   * @param columns      of type String[]
+   * @param orderBy      of type String[]
+   * @param conditions   of type String
+   * @param limit        of type long
+   */
+  public JDBCScheme( Fields columnFields, String[] columns, String[] orderBy, String conditions, long limit )
+    {
+    this( null, null, columnFields, columns, orderBy, conditions, limit, null, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
    * @param columns    of type String[]
    * @param orderBy    of type String[]
    * @param conditions of type String
@@ -153,6 +249,11 @@ public class JDBCScheme extends Scheme
   public JDBCScheme( String[] columns, String[] orderBy, String conditions )
     {
     this( null, null, columns, orderBy, conditions, null );
+    }
+
+  public JDBCScheme( Fields columnFields, String[] columns, String[] orderBy, String conditions )
+    {
+    this( null, null, columnFields, columns, orderBy, conditions, null, null );
     }
 
   /**
@@ -167,6 +268,11 @@ public class JDBCScheme extends Scheme
     this( null, null, columns, orderBy, null, limit, null );
     }
 
+  public JDBCScheme( Fields columnFields, String[] columns, String[] orderBy, long limit )
+    {
+    this( null, null, columnFields, columns, orderBy, null, limit, null, null );
+    }
+
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
    *
@@ -176,6 +282,18 @@ public class JDBCScheme extends Scheme
   public JDBCScheme( String[] columns, String[] orderBy )
     {
     this( null, null, columns, orderBy, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columnFields of type Fields
+   * @param columns      of type String[]
+   * @param orderBy      of type String[]
+   */
+  public JDBCScheme( Fields columnFields, String[] columns, String[] orderBy )
+    {
+    this( null, null, columnFields, columns, orderBy, null, -1, null, null );
     }
 
   /**
@@ -193,12 +311,37 @@ public class JDBCScheme extends Scheme
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
    *
+   * @param columnFields of type Fields
+   * @param columns      of type String[]
+   * @param conditions   of type String
+   * @param limit        of type long
+   */
+  public JDBCScheme( Fields columnFields, String[] columns, String conditions, long limit )
+    {
+    this( null, null, columnFields, columns, null, conditions, limit, null, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
    * @param columns    of type String[]
    * @param conditions of type String
    */
   public JDBCScheme( String[] columns, String conditions )
     {
     this( null, null, columns, null, conditions, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columnFields of type Fields
+   * @param columns      of type String[]
+   * @param conditions   of type String
+   */
+  public JDBCScheme( Fields columnFields, String[] columns, String conditions )
+    {
+    this( null, null, columnFields, columns, null, conditions, null, null );
     }
 
   /**
@@ -215,11 +358,34 @@ public class JDBCScheme extends Scheme
   /**
    * Constructor JDBCScheme creates a new JDBCScheme instance.
    *
+   * @param columnFields of type Fields
+   * @param columns      of type String[]
+   * @param limit        of type long
+   */
+  public JDBCScheme( Fields columnFields, String[] columns, long limit )
+    {
+    this( null, null, columnFields, columns, null, null, limit, null, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
    * @param columns of type String[]
    */
   public JDBCScheme( String[] columns )
     {
-    this( null, null, columns, null, null );
+    this( null, null, new Fields( columns ), columns, null, null, null );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columnFields of type Fields
+   * @param columns      of type String[]
+   */
+  public JDBCScheme( Fields columnFields, String[] columns )
+    {
+    this( null, null, columnFields, columns, null, null, null );
     }
 
   /**
@@ -235,7 +401,24 @@ public class JDBCScheme extends Scheme
    */
   public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, String[] columns, String selectQuery, String countQuery, long limit )
     {
-    this.columnFields = new Fields( columns );
+    this( inputFormatClass, new Fields( columns ), columns, selectQuery, countQuery, limit );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param inputFormatClass of type Class<? extends DBInputFormat>
+   * @param columnFields     of type Fields
+   * @param columns          of type String[]
+   * @param selectQuery      of type String
+   * @param countQuery       of type String
+   * @param limit            of type long
+   */
+  public JDBCScheme( Class<? extends DBInputFormat> inputFormatClass, Fields columnFields, String[] columns, String selectQuery, String countQuery, long limit )
+    {
+    this.columnFields = columnFields;
+
+    verifyColumns( columnFields, columns );
 
     setSourceFields( columnFields );
 
@@ -259,7 +442,21 @@ public class JDBCScheme extends Scheme
    */
   public JDBCScheme( String[] columns, String selectQuery, String countQuery, long limit )
     {
-    this( null, columns, selectQuery, countQuery, limit );
+    this( null, new Fields( columns ), columns, selectQuery, countQuery, limit );
+    }
+
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columnFields of type Fields
+   * @param columns      of type String[]
+   * @param selectQuery  of type String
+   * @param countQuery   of type String
+   * @param limit        of type long
+   */
+  public JDBCScheme( Fields columnFields, String[] columns, String selectQuery, String countQuery, long limit )
+    {
+    this( null, columnFields, columns, selectQuery, countQuery, limit );
     }
 
   /**
@@ -273,9 +470,21 @@ public class JDBCScheme extends Scheme
    */
   public JDBCScheme( String[] columns, String selectQuery, String countQuery )
     {
-    this( null, columns, selectQuery, countQuery, -1 );
+    this( null, new Fields( columns ), columns, selectQuery, countQuery, -1 );
     }
 
+  /**
+   * Constructor JDBCScheme creates a new JDBCScheme instance.
+   *
+   * @param columnFields of type Fields
+   * @param columns      of type String[]
+   * @param selectQuery  of type String
+   * @param countQuery   of type String
+   */
+  public JDBCScheme( Fields columnFields, String[] columns, String selectQuery, String countQuery )
+    {
+    this( null, columnFields, columns, selectQuery, countQuery, -1 );
+    }
 
   public void sourceInit( Tap tap, JobConf conf ) throws IOException
     {
