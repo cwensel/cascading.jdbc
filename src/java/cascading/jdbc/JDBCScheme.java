@@ -528,6 +528,8 @@ public class JDBCScheme extends Scheme
       Tuple allValues = tupleEntry.selectTuple( updateValueFields );
       Tuple updateValues = tupleEntry.selectTuple( updateByFields );
 
+      allValues = cleanTuple( allValues );
+
       TupleRecord key = new TupleRecord( allValues );
 
       if( updateValues.equals( updateIfTuple ) )
@@ -538,7 +540,22 @@ public class JDBCScheme extends Scheme
       return;
       }
 
-    outputCollector.collect( new TupleRecord( tupleEntry.selectTuple( getSinkFields() ) ), null );
+    Tuple result = tupleEntry.selectTuple( getSinkFields() );
+
+    result = cleanTuple( result );
+
+    outputCollector.collect( new TupleRecord( result ), null );
+    }
+
+  /**
+   * Provides a hook for subclasses to escape or modify any values before creating the final SQL statement.
+   *
+   * @param result
+   * @return
+   */
+  protected Tuple cleanTuple( Tuple result )
+    {
+    return result;
     }
 
   @Override
