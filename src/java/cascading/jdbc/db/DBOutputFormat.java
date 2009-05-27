@@ -58,7 +58,6 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
   /** A RecordWriter that writes the reduce output to a SQL table */
   protected class DBRecordWriter implements RecordWriter<K, V>
     {
-
     private Connection connection;
     private PreparedStatement insertStatement;
     private PreparedStatement updateStatement;
@@ -79,12 +78,12 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
     /** {@inheritDoc} */
     public void close( Reporter reporter ) throws IOException
       {
-
       executeBatch();
 
       try
         {
-        insertStatement.close();
+        if( insertStatement != null )
+          insertStatement.close();
 
         if( updateStatement != null )
           updateStatement.close();
@@ -95,7 +94,7 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
         {
         rollBack();
 
-        createThrowMessage( "unable to commit batch", exception );
+        createThrowMessage( "unable to commit batch", 0, exception );
         }
       finally
         {
@@ -115,7 +114,11 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
       try
         {
         if( insertStatementsCurrent != 0 )
+          {
+          LOG.info( "executing insert batch " + createBatchMessage( insertStatementsCurrent ) );
+
           insertStatement.executeBatch();
+          }
 
         insertStatementsCurrent = 0;
         }
@@ -123,13 +126,17 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
         {
         rollBack();
 
-        createThrowMessage( "unable to execute insert batch", exception );
+        createThrowMessage( "unable to execute insert batch", insertStatementsCurrent, exception );
         }
 
       try
         {
         if( updateStatementsCurrent != 0 )
+          {
+          LOG.info( "executing update batch " + createBatchMessage( updateStatementsCurrent ) );
+
           updateStatement.executeBatch();
+          }
 
         updateStatementsCurrent = 0;
         }
@@ -137,7 +144,7 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
         {
         rollBack();
 
-        createThrowMessage( "unable to execute update batch", exception );
+        createThrowMessage( "unable to execute update batch", updateStatementsCurrent, exception );
         }
       }
 
@@ -153,13 +160,21 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
         }
       }
 
-    private void createThrowMessage( String stateMessage, SQLException exception ) throws IOException
+    private String createBatchMessage( long currentStatements )
+      {
+      return String.format( "[totstmts: %d][crntstmts: %d][batch: %d]", statementsAdded, currentStatements, statementsBeforeExecute );
+      }
+
+    private void createThrowMessage( String stateMessage, long currentStatements, SQLException exception ) throws IOException
       {
       String message = exception.getMessage();
 
       message = message.substring( 0, Math.min( 75, message.length() ) );
 
-      String errorMessage = String.format( "%s [length: %d][stmts: %d]: %s", stateMessage, exception.getMessage().length(), statementsAdded, message );
+      int messageLength = exception.getMessage().length();
+      String batchMessage = createBatchMessage( currentStatements );
+      String template = "%s [msglength: %d]%s %s";
+      String errorMessage = String.format( template, stateMessage, messageLength, batchMessage, message );
 
       LOG.error( errorMessage, exception.getNextException() );
 
@@ -167,7 +182,7 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
       }
 
     /** {@inheritDoc} */
-    public void write( K key, V value ) throws IOException
+    public synchronized void write( K key, V value ) throws IOException
       {
       try
         {
@@ -290,7 +305,6 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
     {
     }
 
-
   /** {@inheritDoc} */
   public RecordWriter<K, V> getRecordWriter( FileSystem filesystem, JobConf job, String name, Progressable progress ) throws IOException
     {
@@ -305,14 +319,13 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
 
     configureConnection( connection );
 
-
     String sqlInsert = constructInsertQuery( tableName, fieldNames );
     PreparedStatement insertPreparedStatement;
 
     try
       {
       insertPreparedStatement = connection.prepareStatement( sqlInsert );
-      insertPreparedStatement.setEscapeProcessing( true ); // should be on be default
+      insertPreparedStatement.setEscapeProcessing( true ); // should be on by default
       }
     catch( SQLException exception )
       {
@@ -330,7 +343,6 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
       {
       throw new IOException( "unable to create statement for: " + sqlUpdate, exception );
       }
-
 
     return new DBRecordWriter( connection, insertPreparedStatement, updatePreparedStatement, batchStatements );
     }
