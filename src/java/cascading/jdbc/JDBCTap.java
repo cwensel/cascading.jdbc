@@ -82,7 +82,7 @@ public class JDBCTap extends Tap
   /** Field batchSize */
   int batchSize = 1000;
   /** Field concurrentReads */
-  int concurrentReads = -1;
+  int concurrentReads = 0;
 
   /**
    * Constructor JDBCTap creates a new JDBCTap instance.
@@ -302,9 +302,6 @@ public class JDBCTap extends Tap
       DBConfiguration.configureDB( conf, driverClassName, connectionUrl );
     else
       DBConfiguration.configureDB( conf, driverClassName, connectionUrl, username, password );
-
-    if( concurrentReads != -1 )
-      conf.setNumMapTasks( concurrentReads );
 
     super.sourceInit( conf );
     }

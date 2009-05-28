@@ -45,11 +45,6 @@ import org.apache.hadoop.mapred.lib.db.DBInputFormat.NullDBWritable;
  * <p/>
  * Alternatively, the properties can be set in the configuration with proper
  * values.
- *
- * @see DBConfiguration#configureDB(JobConf, String, String, String, String)
- * @see DBInputFormat#setInput(JobConf, Class, String, String)
- * @see DBInputFormat#setInput(JobConf, Class, String, String, String, String[])
- * @see DBOutputFormat#setOutput(JobConf, String, String[])
  */
 public class DBConfiguration
   {
@@ -100,7 +95,10 @@ public class DBConfiguration
   public static final String OUTPUT_UPDATE_FIELD_NAMES_PROPERTY = "mapred.jdbc.output.update.field.names";
 
   /** The number of statements to batch before executing */
-  public static final String BATCH_STATEMENTS_NUM = "mapred.jdbc.batch.statements.num";
+  public static final String BATCH_STATEMENTS_PROPERTY = "mapred.jdbc.batch.statements.num";
+
+  /** The number of splits allowed, becomes max concurrent reads. */
+  public static final String CONCURRENT_READS_PROPERTY = "mapred.jdbc.concurrent.reads.num";
 
   /**
    * Sets the DB access related fields in the JobConf.
@@ -288,12 +286,25 @@ public class DBConfiguration
 
   int getBatchStatementsNum()
     {
-    return job.getInt( DBConfiguration.BATCH_STATEMENTS_NUM, 1000 );
+    return job.getInt( DBConfiguration.BATCH_STATEMENTS_PROPERTY, 1000 );
     }
 
   void setBatchStatementsNum( int batchStatementsNum )
     {
-    job.setInt( DBConfiguration.BATCH_STATEMENTS_NUM, batchStatementsNum );
+    job.setInt( DBConfiguration.BATCH_STATEMENTS_PROPERTY, batchStatementsNum );
+    }
+
+  int getMaxConcurrentReadsNum()
+    {
+    return job.getInt( DBConfiguration.CONCURRENT_READS_PROPERTY, 0 );
+    }
+
+  void setMaxConcurrentReadsNum( int maxConcurrentReads )
+    {
+    if( maxConcurrentReads < 0 )
+      throw new IllegalArgumentException( "maxConcurrentReads must be a positive value" );
+
+    job.setInt( DBConfiguration.CONCURRENT_READS_PROPERTY, maxConcurrentReads );
     }
 
   }

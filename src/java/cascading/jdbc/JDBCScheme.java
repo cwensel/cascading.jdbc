@@ -488,15 +488,17 @@ public class JDBCScheme extends Scheme
 
   public void sourceInit( Tap tap, JobConf conf ) throws IOException
     {
+    int concurrentReads = ( (JDBCTap) tap ).concurrentReads;
+
     if( selectQuery != null )
       {
-      DBInputFormat.setInput( conf, TupleRecord.class, selectQuery, countQuery, limit );
+      DBInputFormat.setInput( conf, TupleRecord.class, selectQuery, countQuery, limit, concurrentReads );
       }
     else
       {
       String tableName = ( (JDBCTap) tap ).getTableName();
       String joinedOrderBy = orderBy != null ? Util.join( orderBy, ", " ) : null;
-      DBInputFormat.setInput( conf, TupleRecord.class, tableName, conditions, joinedOrderBy, limit, columns );
+      DBInputFormat.setInput( conf, TupleRecord.class, tableName, conditions, joinedOrderBy, limit, concurrentReads, columns );
       }
 
     if( inputFormatClass != null )

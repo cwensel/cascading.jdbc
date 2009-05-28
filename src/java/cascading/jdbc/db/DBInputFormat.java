@@ -309,6 +309,8 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
   protected String[] fieldNames;
   protected String conditions;
   protected long limit;
+  protected int maxConcurrentReads;
+
 
   /** {@inheritDoc} */
   public void configure( JobConf job )
@@ -319,6 +321,7 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
     fieldNames = dbConf.getInputFieldNames();
     conditions = dbConf.getInputConditions();
     limit = dbConf.getInputLimit();
+    maxConcurrentReads = dbConf.getMaxConcurrentReadsNum();
 
     try
       {
@@ -381,6 +384,9 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
   /** {@inheritDoc} */
   public InputSplit[] getSplits( JobConf job, int chunks ) throws IOException
     {
+    // use the configured value if avail
+    chunks = maxConcurrentReads == 0 ? chunks : maxConcurrentReads;
+
     try
       {
       Statement statement = connection.createStatement();
@@ -445,17 +451,18 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
   /**
    * Initializes the map-part of the job with the appropriate input settings.
    *
-   * @param job        The job
-   * @param inputClass the class object implementing DBWritable, which is the
-   *                   Java object holding tuple fields.
-   * @param tableName  The table to read data from
-   * @param conditions The condition which to select data with, eg. '(updated >
-   *                   20070101 AND length > 0)'
-   * @param orderBy    the fieldNames in the orderBy clause.
-   * @param fieldNames The field names in the table
+   * @param job             The job
+   * @param inputClass      the class object implementing DBWritable, which is the
+   *                        Java object holding tuple fields.
+   * @param tableName       The table to read data from
+   * @param conditions      The condition which to select data with, eg. '(updated >
+   *                        20070101 AND length > 0)'
+   * @param orderBy         the fieldNames in the orderBy clause.
    * @param limit
+   * @param fieldNames      The field names in the table
+   * @param concurrentReads
    */
-  public static void setInput( JobConf job, Class<? extends DBWritable> inputClass, String tableName, String conditions, String orderBy, long limit, String... fieldNames )
+  public static void setInput( JobConf job, Class<? extends DBWritable> inputClass, String tableName, String conditions, String orderBy, long limit, int concurrentReads, String... fieldNames )
     {
     job.setInputFormat( DBInputFormat.class );
 
@@ -469,23 +476,25 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
 
     if( limit != -1 )
       dbConf.setInputLimit( limit );
+
+    dbConf.setMaxConcurrentReadsNum( concurrentReads );
     }
 
   /**
    * Initializes the map-part of the job with the appropriate input settings.
    *
-   * @param job                The job
-   * @param dbInputFormatClass
-   * @param inputClass         the class object implementing DBWritable, which is the
-   *                           Java object holding tuple fields.
-   * @param selectQuery        the input query to select fields. Example :
-   *                           "SELECT f1, f2, f3 FROM Mytable ORDER BY f1"
-   * @param countQuery         the input query that returns the number of records in
-   *                           the table.
-   *                           Example : "SELECT COUNT(f1) FROM Mytable"
+   * @param job             The job
+   * @param inputClass      the class object implementing DBWritable, which is the
+   *                        Java object holding tuple fields.
+   * @param selectQuery     the input query to select fields. Example :
+   *                        "SELECT f1, f2, f3 FROM Mytable ORDER BY f1"
+   * @param countQuery      the input query that returns the number of records in
+   *                        the table.
+   *                        Example : "SELECT COUNT(f1) FROM Mytable"
+   * @param concurrentReads
    * @see #setInput(org.apache.hadoop.mapred.JobConf, Class, String, String, String, String...)
    */
-  public static void setInput( JobConf job, Class<? extends DBWritable> inputClass, String selectQuery, String countQuery, long limit )
+  public static void setInput( JobConf job, Class<? extends DBWritable> inputClass, String selectQuery, String countQuery, long limit, int concurrentReads )
     {
     job.setInputFormat( DBInputFormat.class );
 
@@ -497,5 +506,7 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
 
     if( limit != -1 )
       dbConf.setInputLimit( limit );
+
+    dbConf.setMaxConcurrentReadsNum( concurrentReads );
     }
   }
