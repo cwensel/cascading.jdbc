@@ -33,6 +33,9 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -135,7 +138,15 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
           {
           LOG.info( "executing update batch " + createBatchMessage( updateStatementsCurrent ) );
 
-          updateStatement.executeBatch();
+          int[] result = updateStatement.executeBatch();
+
+          int count = 0;
+
+          for( int value : result )
+            count += value;
+
+          if( count != updateStatementsCurrent )
+            throw new IOException( "update did not update same number of statements executed in batch, batch: " + updateStatementsCurrent + " updated: " + count );
           }
 
         updateStatementsCurrent = 0;
@@ -263,6 +274,9 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
     if( fieldNames == null )
       throw new IllegalArgumentException( "field names may not be null" );
 
+    Set<String> updateNamesSet = new HashSet<String>();
+    Collections.addAll( updateNamesSet, updateNames );
+
     StringBuilder query = new StringBuilder();
 
     query.append( "UPDATE " ).append( table );
@@ -271,13 +285,20 @@ public class DBOutputFormat<K extends DBWritable, V> implements OutputFormat<K, 
 
     if( fieldNames.length > 0 && fieldNames[ 0 ] != null )
       {
+      int count = 0;
+
       for( int i = 0; i < fieldNames.length; i++ )
         {
+        if( updateNamesSet.contains( fieldNames[ i ] ) )
+          continue;
+
+        if( count != 0 )
+          query.append( "," );
+
         query.append( fieldNames[ i ] );
         query.append( " = ?" );
 
-        if( i != fieldNames.length - 1 )
-          query.append( "," );
+        count++;
         }
       }
 
