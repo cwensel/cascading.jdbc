@@ -486,6 +486,26 @@ public class JDBCScheme extends Scheme
     this( null, columnFields, columns, selectQuery, countQuery, -1 );
     }
 
+  /**
+   * Method getColumns returns the columns of this JDBCScheme object.
+   *
+   * @return the columns (type String[]) of this JDBCScheme object.
+   */
+  public String[] getColumns()
+    {
+    return columns;
+    }
+
+  /**
+   * Method getOrderBy returns the orderBy of this JDBCScheme object.
+   *
+   * @return the orderBy (type String[]) of this JDBCScheme object.
+   */
+  public String[] getOrderBy()
+    {
+    return orderBy;
+    }
+
   public void sourceInit( Tap tap, JobConf conf ) throws IOException
     {
     int concurrentReads = ( (JDBCTap) tap ).concurrentReads;
