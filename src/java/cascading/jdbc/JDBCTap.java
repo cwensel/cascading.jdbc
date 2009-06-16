@@ -273,6 +273,12 @@ public class JDBCTap extends Tap
     return new Path( "jdbc:/" + connectionUrl.replaceAll( ":", "_" ) );
     }
 
+  @Override
+  public boolean isWriteDirect()
+    {
+    return true;
+    }
+
   public TupleEntryIterator openForRead( JobConf conf ) throws IOException
     {
     return new TupleEntryIterator( getSourceFields(), new TapIterator( this, conf ) );
