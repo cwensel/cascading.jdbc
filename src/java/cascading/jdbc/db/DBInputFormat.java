@@ -392,9 +392,11 @@ public class DBInputFormat<T extends DBWritable> implements InputFormat<LongWrit
       Statement statement = connection.createStatement();
 
       ResultSet results = statement.executeQuery( getCountQuery() );
-      results.next();
 
-      long count = results.getLong( 1 );
+      long count = 0;
+
+      while( results.next() )
+        count += results.getLong( 1 );
 
       if( limit != -1 )
         count = Math.min( limit, count );
