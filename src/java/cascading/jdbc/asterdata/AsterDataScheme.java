@@ -119,7 +119,10 @@ public class AsterDataScheme extends JDBCScheme
       Comparable value = result.get( i );
 
       if( value instanceof String )
+        {
         result.set( i, ( (String) value ).replaceAll( "'", "''" ) );
+        result.set( i, ( (String) value ).replaceAll( "\n", "\\n" ) );
+        }
       }
 
     return result;
