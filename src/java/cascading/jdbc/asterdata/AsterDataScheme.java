@@ -120,8 +120,10 @@ public class AsterDataScheme extends JDBCScheme
 
       if( value instanceof String )
         {
-        result.set( i, ( (String) value ).replaceAll( "'", "''" ) );
-        result.set( i, ( (String) value ).replaceAll( "\n", "\\n" ) );
+        value = ( (String) value ).replaceAll( "'", "''" );
+        value = ( (String) value ).replaceAll( "\t", "\\t" );
+        value = ( (String) value ).replaceAll( "\n", "\\n" );
+        result.set( i, value );
         }
       }
 
