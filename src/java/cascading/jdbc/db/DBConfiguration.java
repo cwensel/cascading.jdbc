@@ -35,7 +35,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.lib.db.DBInputFormat.NullDBWritable;
 
 /**
  * A container for configuration property names for jobs with DB input/output.
@@ -246,7 +245,7 @@ public class DBConfiguration
 
   Class<?> getInputClass()
     {
-    return job.getClass( DBConfiguration.INPUT_CLASS_PROPERTY, NullDBWritable.class );
+    return job.getClass( DBConfiguration.INPUT_CLASS_PROPERTY, DBInputFormat.NullDBWritable.class );
     }
 
   void setInputClass( Class<? extends DBWritable> inputClass )
